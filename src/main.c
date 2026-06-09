@@ -1,127 +1,60 @@
 #include "raylib.h"
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "stdlib.h"
+#include "things.h"
+#include "utils.h"
 
-#define MAX_THINGS 1024
-#define NIL 0
-
-typedef enum {
-  NILKIND,
-  PLAYERKIND,
-  TROLLKIND,
-} Kind;
-
-typedef struct {
-  int id;
-  Kind kind;
-  Vector2 position;
-
-  int parent_id;
-  int first_child_id;
-  int next_sib_id;
-  int prev_sib_id;
-} Thing;
-
-typedef struct {
-  Thing *things;
-  int next_empty_slot;
-} State;
-
-void init(State *state);
-int add(State *state, Kind kind, Vector2 pos);
-void rem(State *state, int id);
-Thing *get(Thing *things, int id);
-
-void init(State *state) {
-  state->things = malloc(MAX_THINGS * sizeof(Thing));
-
-  state->things[NIL] = (Thing){.id = NIL, .kind = NILKIND};
-
-  for (int i = 1; i < MAX_THINGS - 1; ++i) {
-    state->things[i] = (Thing){.id = i, .kind = NILKIND, .next_sib_id = i + 1};
-  }
-
-  state->things[MAX_THINGS - 1] =
-      (Thing){.id = MAX_THINGS - 1, .kind = NILKIND, .next_sib_id = NIL};
-
-  state->next_empty_slot = 1;
-}
-
-int add(State *state, Kind kind, Vector2 pos) {
-  if (state->next_empty_slot == NIL) {
-    printf("out of memory\n");
-    return NIL;
-  }
-
-  int slot = state->next_empty_slot;
-  state->next_empty_slot = state->things[slot].next_sib_id;
-
-  state->things[slot] = (Thing){
-      .kind = kind,
-      .position = pos,
-      .parent_id = NIL,
-      .first_child_id = NIL,
-      .next_sib_id = NIL,
-      .prev_sib_id = NIL,
-  };
-
-  return slot;
-}
-
-Thing *get(Thing *things, int id) {
-  if (id > 0 && id < MAX_THINGS) {
-    return &things[id];
-  } else {
-    return &things[NIL];
-  }
-}
-
-void rem(State *state, int id) {
-  if (id <= NIL || id >= MAX_THINGS || state->things[id].kind == NILKIND) {
-    printf("nothing to do\n");
-    return;
-  }
-
-  state->things[id].kind = NILKIND;
-  state->things[id].next_sib_id = state->next_empty_slot;
-  state->next_empty_slot = id;
-}
+#define SHIP_SPD 2
 
 int main(void) {
-  InitWindow(512, 512, "anton");
-  SetTargetFPS(60);
+	InitWindow(128, 128, "anton");
+	SetTargetFPS(60);
 
-  State state;
-  init(&state);
+	State state;
+	init(&state);
 
-  int player_id = add(&state, PLAYERKIND, (Vector2){256, 256});
+	int ship_id = add(&state, SHIPKIND, (Vector2){64, 64});
 
-  while (!WindowShouldClose()) {
+	while (!WindowShouldClose()) {
 
-    if (IsKeyPressed(KEY_SPACE)) {
-      rem(&state, player_id);
-    }
+	Thing *ship = get(state.things, ship_id);
+	int move_x = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
+	int move_y = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
 
-    BeginDrawing();
-    ClearBackground(BLACK);
+	ship->position = (Vector2){
+		ship->position.x + (move_x * SHIP_SPD),
+		ship->position.y + (move_y * SHIP_SPD)
+	};
 
-    for (int i = 1; i < MAX_THINGS; ++i) {
-      Thing *thing = &state.things[i];
+	if (move_x != 0 || move_y != 0) {
+		add(&state, PARTICLEKIND,
+			vec2add(ship->position, (Vector2){
+			.x = irandom_range(-2, 2),
+			.y = irandom_range(-2, 2),
+		}));
+	}
 
-      if (thing->kind == NILKIND)
-        continue;
+	BeginDrawing();
+	ClearBackground(BLACK);
 
-      if (thing->kind == PLAYERKIND) {
-        DrawRectangleV(thing->position, (Vector2){64, 64}, RED);
-      }
-    }
+	for (int i = 1; i < MAX_THINGS; ++i) {
+		Thing *thing = &state.things[i];
 
-    EndDrawing();
-  }
+		if (thing->kind == NILKIND) continue;
 
-  free(state.things);
+		if (thing->kind == SHIPKIND) {
+			DrawRectangleV(thing->position, (Vector2){64, 64}, RED);
+		}
 
-  CloseWindow();
-  return 0;
+		if (thing->kind == PARTICLEKIND) {
+			DrawRectangleV(thing->position, (Vector2){64, 64}, RED);
+		}
+	}
+
+	EndDrawing();
+	}
+
+	free(state.things);
+
+	CloseWindow();
+	return 0;
 }

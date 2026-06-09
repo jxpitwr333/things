@@ -15,7 +15,7 @@ ifeq ($(OS),Windows_NT)
     RM = rmdir /s /q
     MKDIR = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
     TARGET_EXT = .exe
-    RUN_CMD = $(TARGET)
+    RUN_CMD = $(subst /,\,$(TARGET))
 else
     LIBS = -L/usr/local/lib -lraylib -lm -lpthread -ldl -lrt -lX11
     RM = rm -rf
