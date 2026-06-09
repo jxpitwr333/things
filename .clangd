@@ -1,0 +1,6 @@
+Diagnostics:
+  Suppress:
+    - invalid_token_after_toplevel_declarator
+    - unknown_typename
+    - expected_semi_after_decl
+  UnusedIncludes: Strict
