@@ -31,16 +31,16 @@ TARGET = $(BUILD_DIR)/game$(TARGET_EXT)
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-all: $(BUILD_DIR) $(TARGET)
-
-$(BUILD_DIR):
-	$(MKDIR)
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) $(LIBS)
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD_DIR):
+	$(MKDIR)
 
 clean:
 	$(RM) $(BUILD_DIR)
