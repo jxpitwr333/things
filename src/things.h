@@ -1,0 +1,112 @@
+#ifndef THINGS_H
+#define THINGS_H
+
+#include <raylib.h>
+#include <stdint.h>
+
+typedef uint16_t u16;
+typedef int16_t i16;
+typedef int8_t i8;
+typedef uint8_t u8;
+
+#define MAX_THINGS ((u16)4096)
+#define NIL ((u16)0)
+#define MAX_ALARMS ((u16)4)
+#define MAX_FRAMES 2
+
+#define GAME_WIDTH 128
+#define GAME_HEIGHT 128
+#define WINDOW_WIDTH 512
+#define WINDOW_HEIGHT 512
+
+#define TILE_SIZE 8
+#define HALF_TILE_SIZE 4
+
+#define SHEET_COLUMNS ((u16)11)
+#define SHEET_ROWS ((u16)2)
+
+#define SHIP_SPD 2
+
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define SUB_POSITION ((float)256.0f)
+#define TO_FIXED(f) ((i16)((f) * SUB_POSITION))
+#define TO_FLOAT(fx) ((float)(fx) / SUB_POSITION)
+
+typedef enum {
+  NILKIND,
+  SHIPKIND,
+  ALIENKIND,
+  BULLETKIND,
+  KIND_AMOUNT,
+} Kind;
+
+#define KIND_COUNT (KIND_AMOUNT - 1)
+
+typedef struct {
+} ShipTrait;
+typedef struct {
+} AlienTrait;
+
+typedef struct {
+  i8 width;
+  i8 height;
+  i8 offsetX;
+  i8 offsetY;
+} Mask;
+
+typedef struct {
+  u16 id;
+  u16 denseId;
+  u8 kind;
+
+  i16 subX;
+  i16 subY;
+  i8 scaleX;
+  i8 scaleY;
+  i8 rotation;
+  Mask mask;
+
+  i8 spriteId;
+  i16 alarms[MAX_ALARMS]; // alarm[0] is reserved for ticking the thing's animation.
+
+  u16 parentId;
+  u16 firstChildId;
+  u16 nextSibId;
+  u16 prevSibId;
+} Thing;
+
+typedef struct {
+  Thing *things;
+  u16 *activeIds;
+  u16 activeCount;
+  u16 nextEmptySlot;
+  Texture *spritesheet;
+  u16 kindHeads[KIND_COUNT];
+} State;
+
+typedef enum {
+  ANIM_GREEN,
+} AnimNames;
+
+typedef struct {
+  u8 frames[MAX_FRAMES];
+  u8 ticksPerFrame;
+  bool loops;
+} Animation;
+
+extern const Animation ANIMATIONS[];
+
+void init(State *state);
+u16 add(State *state, Thing thing);
+Thing *get(Thing *things, u16 id);
+void rem(State *state, u16 id);
+void draw(Texture2D *spritesheet, Thing *thing);
+void drawanim(Texture2D *spritesheet, Thing *thing, const Animation *anim);
+void kind_link(State *state, u16 id);
+void kind_unlink(State *state, u16 id);
+
+bool checkOBB(Thing *t1, Thing *t2);
+void draw_thing_mask(Thing *thing, Color color);
+void draw_debug_masks(State *state);
+
+#endif

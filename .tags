@@ -47,7 +47,11 @@ $(BUILD_DIR)/%.o	Makefile	/^$(BUILD_DIR)\/%.o: $(SRC_DIR)\/%.c | $(BUILD_DIR)$/;
 $(TARGET)	Makefile	/^$(TARGET): $(OBJS)$/;"	t
 ABS	src/main.c	/^#define ABS(/;"	d	file:
 ALIENKIND	src/main.c	/^  ALIENKIND,$/;"	e	enum:__anon6a96e1720103	file:
+ANIMATIONS	src/main.c	/^const Animation ANIMATIONS[] = {$/;"	v	typeref:typename:const Animation[]
+ANIM_GREEN	src/main.c	/^	ANIM_GREEN,$/;"	e	enum:__anon6a96e1720703	file:
 AlienTrait	src/main.c	/^} AlienTrait;$/;"	t	typeref:struct:__anon6a96e1720308	file:
+AnimNames	src/main.c	/^} AnimNames;$/;"	t	typeref:enum:__anon6a96e1720703	file:
+Animation	src/main.c	/^} Animation;$/;"	t	typeref:struct:__anon6a96e1720808	file:
 BUILD_DIR	Makefile	/^BUILD_DIR = build$/;"	m
 BULLETKIND	src/main.c	/^  BULLETKIND,$/;"	e	enum:__anon6a96e1720103	file:
 CC	Makefile	/^CC = gcc$/;"	m
@@ -62,6 +66,7 @@ Kind	src/main.c	/^} Kind;$/;"	t	typeref:enum:__anon6a96e1720103	file:
 LIBS	Makefile	/^    LIBS = -L\/usr\/local\/lib -lraylib -lm -lpthread -ldl -lrt -lX11$/;"	m
 LIBS	Makefile	/^    LIBS = -L\/usr\/local\/lib -lraylib -lopengl32 -lgdi32 -lwinmm$/;"	m
 MAX_ALARMS	src/main.c	/^#define MAX_ALARMS /;"	d	file:
+MAX_FRAMES	src/main.c	/^#define MAX_FRAMES /;"	d	file:
 MAX_THINGS	src/main.c	/^#define MAX_THINGS /;"	d	file:
 MKDIR	Makefile	/^    MKDIR = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)$/;"	m
 MKDIR	Makefile	/^    MKDIR = mkdir -p $(BUILD_DIR)$/;"	m
@@ -79,12 +84,15 @@ SHIPKIND	src/main.c	/^  SHIPKIND,$/;"	e	enum:__anon6a96e1720103	file:
 SHIP_SPD	src/main.c	/^#define SHIP_SPD /;"	d	file:
 SRCS	Makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
 SRC_DIR	Makefile	/^SRC_DIR = src$/;"	m
+SUB_POSITION	src/main.c	/^#define SUB_POSITION /;"	d	file:
 ShipTrait	src/main.c	/^} ShipTrait;$/;"	t	typeref:struct:__anon6a96e1720208	file:
 State	src/main.c	/^} State;$/;"	t	typeref:struct:__anon6a96e1720608	file:
 TARGET	Makefile	/^TARGET = $(BUILD_DIR)\/game$(TARGET_EXT)$/;"	m
 TARGET_EXT	Makefile	/^    TARGET_EXT = .exe$/;"	m
 TARGET_EXT	Makefile	/^    TARGET_EXT =$/;"	m
 TILE_SIZE	src/main.c	/^#define TILE_SIZE /;"	d	file:
+TO_FIXED	src/main.c	/^#define TO_FIXED(/;"	d	file:
+TO_FLOAT	src/main.c	/^#define TO_FLOAT(/;"	d	file:
 Thing	src/main.c	/^} Thing;$/;"	t	typeref:struct:__anon6a96e1720508	file:
 WINDOW_HEIGHT	src/main.c	/^#define WINDOW_HEIGHT /;"	d	file:
 WINDOW_WIDTH	src/main.c	/^#define WINDOW_WIDTH /;"	d	file:
@@ -94,38 +102,54 @@ __anon6a96e1720308	src/main.c	/^typedef struct {$/;"	s	file:
 __anon6a96e1720408	src/main.c	/^typedef struct {$/;"	s	file:
 __anon6a96e1720508	src/main.c	/^typedef struct {$/;"	s	file:
 __anon6a96e1720608	src/main.c	/^typedef struct {$/;"	s	file:
+__anon6a96e1720703	src/main.c	/^typedef enum {$/;"	g	file:
+__anon6a96e1720808	src/main.c	/^typedef struct {$/;"	s	file:
+activeCount	src/main.c	/^  u16 activeCount;$/;"	m	struct:__anon6a96e1720608	typeref:typename:u16	file:
+activeIds	src/main.c	/^  u16* activeIds;$/;"	m	struct:__anon6a96e1720608	typeref:typename:u16 *	file:
 add	src/main.c	/^u16 add(State *state, Thing thing) {$/;"	f	typeref:typename:u16
-addVector2	src/main.c	/^inline Vector2 addVector2(Vector2 v1, Vector2 v2) {$/;"	f	typeref:typename:Vector2
-alarms	src/main.c	/^  i16 *alarms;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i16 *	file:
+alarms	src/main.c	/^  i16 alarms[MAX_ALARMS]; \/\/ alarm[0] is reserved for ticking the thing's animation.$/;"	m	struct:__anon6a96e1720508	typeref:typename:i16[]	file:
 all	Makefile	/^all: $(TARGET)$/;"	t
 checkOBB	src/main.c	/^bool checkOBB(Thing *t1, Thing *t2) {$/;"	f	typeref:typename:bool
 clean	Makefile	/^clean:$/;"	t
-dimensions	src/main.c	/^  Vector2 dimensions;$/;"	m	struct:__anon6a96e1720408	typeref:typename:Vector2	file:
-draw	src/main.c	/^void draw(Texture2D *spritesheet, Thing *thing) { \/\/, _Bool center$/;"	f	typeref:typename:void
+denseId	src/main.c	/^  u16 denseId;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
+draw	src/main.c	/^void draw(Texture2D *spritesheet, Thing *thing) {$/;"	f	typeref:typename:void
+draw_debug_masks	src/main.c	/^void draw_debug_masks(State *state) {$/;"	f	typeref:typename:void
+draw_thing_mask	src/main.c	/^void draw_thing_mask(Thing *thing, Color color) {$/;"	f	typeref:typename:void
+drawanim	src/main.c	/^void drawanim(Texture2D* spritesheet, Thing* thing, const Animation* anim) {$/;"	f	typeref:typename:void
 firstChildId	src/main.c	/^  u16 firstChildId;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
+frames	src/main.c	/^	u8 frames[MAX_FRAMES];$/;"	m	struct:__anon6a96e1720808	typeref:typename:u8[]	file:
 get	src/main.c	/^Thing *get(Thing *things, u16 id) {$/;"	f	typeref:typename:Thing *
+height	src/main.c	/^  i8 height;$/;"	m	struct:__anon6a96e1720408	typeref:typename:i8	file:
 i16	src/main.c	/^typedef int16_t i16;$/;"	t	typeref:typename:int16_t	file:
-iRandomRange	src/main.c	/^inline int iRandomRange(int min, int max) {$/;"	f	typeref:typename:int
+i8	src/main.c	/^typedef int8_t i8;$/;"	t	typeref:typename:int8_t	file:
 id	src/main.c	/^  u16 id;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
 init	src/main.c	/^void init(State *state) {$/;"	f	typeref:typename:void
-kind	src/main.c	/^  u16 kind;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
+kind	src/main.c	/^  u8 kind;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u8	file:
 kindHeads	src/main.c	/^  u16 kindHeads[KIND_COUNT];$/;"	m	struct:__anon6a96e1720608	typeref:typename:u16[]	file:
 kind_link	src/main.c	/^void kind_link(State *state, u16 id) {$/;"	f	typeref:typename:void
 kind_unlink	src/main.c	/^void kind_unlink(State *state, u16 id) {$/;"	f	typeref:typename:void
+loops	src/main.c	/^	bool loops;$/;"	m	struct:__anon6a96e1720808	typeref:typename:bool	file:
 main	src/main.c	/^int main(void) {$/;"	f	typeref:typename:int
 mask	src/main.c	/^  Mask mask;$/;"	m	struct:__anon6a96e1720508	typeref:typename:Mask	file:
 nextEmptySlot	src/main.c	/^  u16 nextEmptySlot;$/;"	m	struct:__anon6a96e1720608	typeref:typename:u16	file:
 nextSibId	src/main.c	/^  u16 nextSibId;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
-offset	src/main.c	/^  Vector2 offset;$/;"	m	struct:__anon6a96e1720408	typeref:typename:Vector2	file:
+offsetX	src/main.c	/^  i8 offsetX;$/;"	m	struct:__anon6a96e1720408	typeref:typename:i8	file:
+offsetY	src/main.c	/^  i8 offsetY;$/;"	m	struct:__anon6a96e1720408	typeref:typename:i8	file:
 parentId	src/main.c	/^  u16 parentId;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
-position	src/main.c	/^  Vector2 position;$/;"	m	struct:__anon6a96e1720508	typeref:typename:Vector2	file:
 prevSibId	src/main.c	/^  u16 prevSibId;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
 profile	Makefile	/^profile: clean all$/;"	t
 rem	src/main.c	/^void rem(State *state, u16 id) {$/;"	f	typeref:typename:void
-rotation	src/main.c	/^  float rotation;$/;"	m	struct:__anon6a96e1720508	typeref:typename:float	file:
+rotation	src/main.c	/^  i8 rotation;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i8	file:
 run	Makefile	/^run: $(TARGET)$/;"	t
-scale	src/main.c	/^  Vector2 scale;$/;"	m	struct:__anon6a96e1720508	typeref:typename:Vector2	file:
-sprite_id	src/main.c	/^  u16 sprite_id;$/;"	m	struct:__anon6a96e1720508	typeref:typename:u16	file:
+scaleX	src/main.c	/^  i8 scaleX;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i8	file:
+scaleY	src/main.c	/^  i8 scaleY;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i8	file:
+ship_update	src/main.c	/^void ship_update(State* state, u16 id) {$/;"	f	typeref:typename:void
+spriteId	src/main.c	/^  i8 spriteId;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i8	file:
 spritesheet	src/main.c	/^  Texture *spritesheet;$/;"	m	struct:__anon6a96e1720608	typeref:typename:Texture *	file:
+subX	src/main.c	/^  i16 subX;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i16	file:
+subY	src/main.c	/^  i16 subY;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i16	file:
 things	src/main.c	/^  Thing *things;$/;"	m	struct:__anon6a96e1720608	typeref:typename:Thing *	file:
+ticksPerFrame	src/main.c	/^	u8 ticksPerFrame;$/;"	m	struct:__anon6a96e1720808	typeref:typename:u8	file:
 u16	src/main.c	/^typedef uint16_t u16;$/;"	t	typeref:typename:uint16_t	file:
+u8	src/main.c	/^typedef uint8_t u8;$/;"	t	typeref:typename:uint8_t	file:
+width	src/main.c	/^  i8 width;$/;"	m	struct:__anon6a96e1720408	typeref:typename:i8	file:
