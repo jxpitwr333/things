@@ -1,9 +1,3 @@
-/*
- * Currently doing shaving to the Thing struct in order to allow traits to fit.
- * Shaving includes moving floats to fixed point integers, and moving other values to bytes.
- * Must fix check OBB function.
- */
-
 #include <math.h>
 #include <raylib.h>
 #include <stdint.h>
@@ -16,9 +10,10 @@ typedef int16_t i16;
 typedef int8_t i8;
 typedef uint8_t u8;
 
-#define MAX_THINGS ((u16)1024)
+#define MAX_THINGS ((u16)4096)
 #define NIL ((u16)0)
 #define MAX_ALARMS ((u16)4)
+#define MAX_FRAMES 2
 
 #define GAME_WIDTH 128
 #define GAME_HEIGHT 128
@@ -34,8 +29,9 @@ typedef uint8_t u8;
 #define SHIP_SPD 2
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
-#define TO_FIXED(f) ((i16)((f) * 256.0f))
-#define TO_FLOAT(fx) ((float)(fx) / 256.0f)
+#define SUB_POSITION ((float)256.0f)
+#define TO_FIXED(f) ((i16)((f) * SUB_POSITION))
+#define TO_FLOAT(fx) ((float)(fx) / SUB_POSITION)
 
 typedef enum {
   NILKIND,
@@ -61,6 +57,7 @@ typedef struct {
 
 typedef struct {
   u16 id;
+  u16 denseId;
   u8 kind;
 
   i16 subX;
@@ -71,7 +68,7 @@ typedef struct {
   Mask mask;
 
   i8 spriteId;
-  i16 alarms[MAX_ALARMS];
+  i16 alarms[MAX_ALARMS]; // alarm[0] is reserved for ticking the thing's animation.
 
   u16 parentId;
   u16 firstChildId;
@@ -81,22 +78,41 @@ typedef struct {
 
 typedef struct {
   Thing *things;
+  u16* activeIds;
+  u16 activeCount;
   u16 nextEmptySlot;
   Texture *spritesheet;
   u16 kindHeads[KIND_COUNT];
 } State;
+
+typedef enum {
+	ANIM_GREEN,
+} AnimNames;
+
+typedef struct {
+	u8 frames[MAX_FRAMES];
+	u8 ticksPerFrame;
+	bool loops;
+} Animation;
+
+const Animation ANIMATIONS[] = {
+	[ANIM_GREEN] = { .frames = { 0, 1}, .ticksPerFrame = 4, .loops = true }
+};
 
 void init(State *state);
 u16 add(State *state, Thing thing);
 Thing *get(Thing *things, u16 id);
 void rem(State *state, u16 id);
 void draw(Texture2D *spritesheet, Thing *thing);
+void drawanim(Texture2D* spritesheet, Thing *thing, const Animation* anim);
 void kind_link(State *state, u16 id);
 void kind_unlink(State *state, u16 id);
 
 bool checkOBB(Thing *t1, Thing *t2);
 void draw_thing_mask(Thing *thing, Color color);
 void draw_debug_masks(State *state);
+
+void ship_update(State* state, u16 id);
 
 int main(void) {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
@@ -108,7 +124,7 @@ int main(void) {
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
-  u16 ship_id = add(&state, (Thing){
+  	u16 ship_id = add(&state, (Thing){
         .kind = SHIPKIND,
         .subX = TO_FIXED(64),
 		.subY = TO_FIXED(64),
@@ -121,22 +137,33 @@ int main(void) {
 			.offsetX = 0,
 			.offsetY = 0,
 		}
-    });
+	});
 	kind_link(&state, ship_id);
 
   while (!WindowShouldClose()) {
 
+	for (u16 i = 0; i < state.activeCount; ++i) {
+		u16 id = state.activeIds[i];
+		Thing *t = &state.things[id];
+		
+    	t->alarms[0]++; // increment alarm[0] for animations
+		// decrement every other alarm.
+		for (i16 j = 1; j < MAX_ALARMS; ++j) {
+			if (t->alarms[j] > 0) t->alarms[j]--;
+		}
+	}
+
+	ship_update(&state, ship_id);
+
     BeginTextureMode(renderTexture);
     ClearBackground(BLACK);
 
-	for (int i = 1; i < MAX_THINGS; ++i) {
-      if (state.things[i].kind == NILKIND)
-        continue;
+	for (u16 i = 0; i < state.activeCount; ++i) {
+		u16 id = state.activeIds[i];
+		draw(&spritesheet, &state.things[id]);
+	}
 
-      draw(&spritesheet, &state.things[i]);
-    }
-
-	draw_debug_masks(&state);
+	//draw_debug_masks(&state);
     EndTextureMode();
 
     BeginDrawing();
@@ -152,6 +179,7 @@ int main(void) {
   }
 
   free(state.things);
+  free(state.activeIds);
   UnloadRenderTexture(renderTexture);
   UnloadTexture(spritesheet);
   CloseWindow();
@@ -160,7 +188,9 @@ int main(void) {
 
 void init(State *state) {
   state->things = malloc(MAX_THINGS * sizeof(Thing));
-
+  state->activeIds = malloc(MAX_THINGS * sizeof(u16));
+  memset(state->activeIds, NIL, MAX_THINGS * sizeof(u16));
+  
   state->things[NIL] = (Thing){.id = NIL, .kind = NILKIND};
 
   for (int i = 1; i < MAX_THINGS - 1; ++i) {
@@ -193,6 +223,10 @@ u16 add(State *state, Thing thing) {
   state->things[slot].nextSibId = NIL;
   state->things[slot].prevSibId = NIL;
 
+  state->things[slot].denseId = state->activeCount; 
+  state->activeIds[state->activeCount] = slot;
+  state->activeCount++;
+
   return slot;
 }
 
@@ -206,6 +240,16 @@ void rem(State *state, u16 id) {
     return;
   }
 
+  u16 deadDenseId = state->things[id].denseId;
+  if (deadDenseId < state->activeCount - 1) {
+    u16 lastEntityId = state->activeIds[state->activeCount - 1];
+    state->activeIds[deadDenseId] = lastEntityId;
+    state->things[lastEntityId].denseId = deadDenseId;
+  }
+  
+  state->activeCount--;
+
+  state->things[id].denseId = 0;
   memset(state->things[id].alarms, -1, sizeof(state->things[id].alarms));
   state->things[id].kind = NILKIND;
   state->things[id].nextSibId = state->nextEmptySlot;
@@ -216,16 +260,66 @@ void draw(Texture2D *spritesheet, Thing *thing) {
   u16 col = thing->spriteId % SHEET_COLUMNS;
   u16 row = thing->spriteId / SHEET_COLUMNS;
 
-  DrawTextureRec(*spritesheet,
-                 (Rectangle){
-                     .x = col * TILE_SIZE,
-                     .y = row * TILE_SIZE,
-                     .width = TILE_SIZE,
-                     .height = TILE_SIZE,
-                 },
-                 (Vector2){TO_FLOAT(thing->subX) - HALF_TILE_SIZE,
-                           TO_FLOAT(thing->subY) - HALF_TILE_SIZE},
-                 WHITE);
+  float renderX = TO_FLOAT(thing->subX);
+  float renderY = TO_FLOAT(thing->subY);
+
+  float srcWidth  = (float)TILE_SIZE * (float)thing->scaleX;
+  float srcHeight = (float)TILE_SIZE * (float)thing->scaleY;
+
+  DrawTexturePro(
+      *spritesheet,
+      (Rectangle){
+          .x = col * TILE_SIZE,
+          .y = row * TILE_SIZE,
+          .width  = srcWidth,
+          .height = srcHeight
+      },
+      (Rectangle){
+          .x = renderX,
+          .y = renderY,
+          .width  = TILE_SIZE,
+          .height = TILE_SIZE
+      },
+      (Vector2){HALF_TILE_SIZE, HALF_TILE_SIZE},
+      (float)thing->rotation,
+      WHITE
+  );
+}
+
+void drawanim(Texture2D* spritesheet, Thing* thing, const Animation* anim) {
+    i16 current_tick = thing->alarms[0];
+
+    int total_animation_ticks = anim->ticksPerFrame * MAX_FRAMES;
+
+    if (current_tick >= total_animation_ticks) {
+        if (anim->loops) {
+            current_tick = current_tick % total_animation_ticks;
+            thing->alarms[0] = current_tick;
+        } else {
+            current_tick = total_animation_ticks - 1;
+        }
+    }
+	
+    u8 frame_index = current_tick / anim->ticksPerFrame;
+
+    u8 actual_sprite_id = anim->frames[frame_index];
+
+    u16 col = actual_sprite_id % SHEET_COLUMNS;
+    u16 row = actual_sprite_id / SHEET_COLUMNS;
+
+    float renderX = TO_FLOAT(thing->subX);
+    float renderY = TO_FLOAT(thing->subY);
+    float srcWidth  = (float)TILE_SIZE * (float)thing->scaleX;
+    float srcHeight = (float)TILE_SIZE * (float)thing->scaleY;
+
+    DrawTexturePro(
+        *spritesheet,
+        (Rectangle){ col * TILE_SIZE, row * TILE_SIZE, srcWidth, srcHeight },
+        (Rectangle){ renderX, renderY, TILE_SIZE, TILE_SIZE },
+        (Vector2){ HALF_TILE_SIZE, HALF_TILE_SIZE },
+        (float)thing->rotation,
+        WHITE
+    );
 }
 
 void kind_link(State *state, u16 id) {
@@ -385,4 +479,22 @@ void draw_debug_masks(State *state) {
             current = t->nextSibId;
         } while (current != head);
     }
+}
+
+void ship_update(State* state, u16 id) {
+	Thing* ship = get(state->things, id);
+
+	int moveX = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
+	int moveY = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
+
+	if (moveX != 0) {
+		ship->spriteId = 1;
+		ship->scaleX = (i8)moveX;
+	} else {
+		ship->spriteId = 0;
+		ship->scaleX = (i8)1;
+	}
+
+	ship->subX += TO_FIXED(SHIP_SPD * moveX);
+	ship->subY += TO_FIXED(SHIP_SPD * moveY);
 }
