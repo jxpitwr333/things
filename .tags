@@ -96,7 +96,7 @@ __anon6a96e1720508	src/main.c	/^typedef struct {$/;"	s	file:
 __anon6a96e1720608	src/main.c	/^typedef struct {$/;"	s	file:
 add	src/main.c	/^u16 add(State *state, Thing thing) {$/;"	f	typeref:typename:u16
 addVector2	src/main.c	/^inline Vector2 addVector2(Vector2 v1, Vector2 v2) {$/;"	f	typeref:typename:Vector2
-alarms	src/main.c	/^  i16 alarms[MAX_ALARMS];$/;"	m	struct:__anon6a96e1720508	typeref:typename:i16[]	file:
+alarms	src/main.c	/^  i16 *alarms;$/;"	m	struct:__anon6a96e1720508	typeref:typename:i16 *	file:
 all	Makefile	/^all: $(TARGET)$/;"	t
 checkOBB	src/main.c	/^bool checkOBB(Thing *t1, Thing *t2) {$/;"	f	typeref:typename:bool
 clean	Makefile	/^clean:$/;"	t

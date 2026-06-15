@@ -1,3 +1,9 @@
+/*
+ * Currently doing shaving to the Thing struct in order to allow traits to fit.
+ * Shaving includes moving floats to fixed point integers, and moving other values to bytes.
+ * Must fix check OBB function.
+ */
+
 #include <math.h>
 #include <raylib.h>
 #include <stdbool.h>
@@ -8,6 +14,8 @@
 
 typedef uint16_t u16;
 typedef int16_t i16;
+typedef int8_t i8;
+typedef uint8_t u8;
 
 #define MAX_THINGS ((u16)1024)
 #define NIL ((u16)0)
@@ -27,6 +35,9 @@ typedef int16_t i16;
 #define SHIP_SPD 2
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
+#define TO_FIXED(f) ((i16)((f) * 256.0f))
+#define TO_FLOAT(fx) ((float)(fx) / 256.0f)
+
 typedef enum {
   NILKIND,
   SHIPKIND,
@@ -43,8 +54,10 @@ typedef struct {
 } AlienTrait;
 
 typedef struct {
-  Vector2 dimensions;
-  Vector2 offset;
+  i8 width;
+  i8 height;
+  i8 offsetX;
+  i8 offsetY;
 } Mask;
 
 typedef struct {
@@ -96,20 +109,13 @@ int main(void) {
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
   u16 ship_id = add(&state, (Thing){
-                                .kind = SHIPKIND,
-                                .position = (Vector2){.x = 64, .y = 64},
-                                .scale = {1, 1},
-                                .sprite_id = 0,
-                            });
+        .kind = SHIPKIND,
+        .position = (Vector2){.x = 64, .y = 64},
+        .scale = {1, 1},
+        .sprite_id = 0,
+    });
 
   while (!WindowShouldClose()) {
-
-    for (int i = 1; i < MAX_THINGS; ++i) {
-      if (state.things[i].kind == NILKIND)
-        continue;
-
-      // update here
-    }
 
     BeginTextureMode(renderTexture);
     ClearBackground(BLACK);
@@ -148,7 +154,7 @@ void init(State *state) {
 
   for (int i = 1; i < MAX_THINGS - 1; ++i) {
     state->things[i] = (Thing){.id = i, .kind = NILKIND, .nextSibId = i + 1};
-    memset(&state->things[i].alarms, -1, sizeof(state->things[i].alarms));
+    memset(state->things[i].alarms, -1, sizeof(i16) * MAX_ALARMS);
   }
 
   state->things[MAX_THINGS - 1] =
@@ -189,7 +195,7 @@ void rem(State *state, u16 id) {
     return;
   }
 
-  memset(&state->things[id].alarms, -1, sizeof(state->things[id].alarms));
+  memset(state->things[id].alarms, -1, sizeof(state->things[id].alarms));
   state->things[id].kind = NILKIND;
   state->things[id].nextSibId = state->nextEmptySlot;
   state->nextEmptySlot = id;
@@ -226,9 +232,9 @@ void kind_link(State *state, u16 id) {
   } else {
     u16 tail = state->things[head].prevSibId;
     state->things[tail].nextSibId = id;
-    thing.prevSibId = tail;
+    thing->prevSibId = tail;
 
-    thing.nextSibId = head;
+    thing->nextSibId = head;
     state->things[head].prevSibId = id;
   }
 }
