@@ -6,7 +6,6 @@
 
 #include <math.h>
 #include <raylib.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,14 +61,16 @@ typedef struct {
 
 typedef struct {
   u16 id;
-  u16 kind;
+  u8 kind;
 
-  Vector2 position;
-  Vector2 scale;
-  float rotation;
+  i16 subX;
+  i16 subY;
+  i8 scaleX;
+  i8 scaleY;
+  i8 rotation;
   Mask mask;
 
-  u16 sprite_id;
+  i8 spriteId;
   i16 alarms[MAX_ALARMS];
 
   u16 parentId;
@@ -89,14 +90,13 @@ void init(State *state);
 u16 add(State *state, Thing thing);
 Thing *get(Thing *things, u16 id);
 void rem(State *state, u16 id);
-void draw(Texture2D *spritesheet, Thing *thing); //, _Bool center
+void draw(Texture2D *spritesheet, Thing *thing);
 void kind_link(State *state, u16 id);
 void kind_unlink(State *state, u16 id);
 
-inline Vector2 addVector2(Vector2 v1, Vector2 v2);
-inline int iRandomRange(int min, int max);
-
 bool checkOBB(Thing *t1, Thing *t2);
+void draw_thing_mask(Thing *thing, Color color);
+void draw_debug_masks(State *state);
 
 int main(void) {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
@@ -110,22 +110,33 @@ int main(void) {
 
   u16 ship_id = add(&state, (Thing){
         .kind = SHIPKIND,
-        .position = (Vector2){.x = 64, .y = 64},
-        .scale = {1, 1},
-        .sprite_id = 0,
+        .subX = TO_FIXED(64),
+		.subY = TO_FIXED(64),
+        .scaleX = 1,
+		.scaleY = 1,
+        .spriteId = 0,
+		.mask = {
+			.width = 8,
+			.height = 8,
+			.offsetX = 0,
+			.offsetY = 0,
+		}
     });
+	kind_link(&state, ship_id);
 
   while (!WindowShouldClose()) {
 
     BeginTextureMode(renderTexture);
     ClearBackground(BLACK);
 
-    for (int i = 1; i < MAX_THINGS; ++i) {
+	for (int i = 1; i < MAX_THINGS; ++i) {
       if (state.things[i].kind == NILKIND)
         continue;
 
       draw(&spritesheet, &state.things[i]);
     }
+
+	draw_debug_masks(&state);
     EndTextureMode();
 
     BeginDrawing();
@@ -201,9 +212,9 @@ void rem(State *state, u16 id) {
   state->nextEmptySlot = id;
 }
 
-void draw(Texture2D *spritesheet, Thing *thing) { //, _Bool center
-  u16 col = thing->sprite_id % SHEET_COLUMNS;
-  u16 row = thing->sprite_id / SHEET_COLUMNS;
+void draw(Texture2D *spritesheet, Thing *thing) {
+  u16 col = thing->spriteId % SHEET_COLUMNS;
+  u16 row = thing->spriteId / SHEET_COLUMNS;
 
   DrawTextureRec(*spritesheet,
                  (Rectangle){
@@ -212,8 +223,8 @@ void draw(Texture2D *spritesheet, Thing *thing) { //, _Bool center
                      .width = TILE_SIZE,
                      .height = TILE_SIZE,
                  },
-                 (Vector2){thing->position.x - HALF_TILE_SIZE,
-                           thing->position.y - HALF_TILE_SIZE},
+                 (Vector2){TO_FLOAT(thing->subX) - HALF_TILE_SIZE,
+                           TO_FLOAT(thing->subY) - HALF_TILE_SIZE},
                  WHITE);
 }
 
@@ -260,35 +271,42 @@ void kind_unlink(State *state, u16 id) {
   }
 }
 
-inline Vector2 addVector2(Vector2 v1, Vector2 v2) {
-  return (Vector2){v1.x + v2.x, v1.y + v2.y};
-}
-
-inline int iRandomRange(int min, int max) {
-  return (rand() % (max - min + 1)) + min;
-}
-
 bool checkOBB(Thing *t1, Thing *t2) {
-  float c1 = cosf(t1->rotation);
-  float s1 = sinf(t1->rotation);
-  float c2 = cosf(t2->rotation);
-  float s2 = sinf(t2->rotation);
+  float rad1 = (float)t1->rotation * (PI / 180.0f);
+  float rad2 = (float)t2->rotation * (PI / 180.0f);
+
+  float c1 = cosf(rad1);
+  float s1 = sinf(rad1);
+  float c2 = cosf(rad2);
+  float s2 = sinf(rad2);
 
   Vector2 axes[4] = {{c1, s1}, {-s1, c1}, {c2, s2}, {-s2, c2}};
 
-  float hx1 = t1->mask.dimensions.x * t1->scale.x * 0.5f;
-  float hy1 = t1->mask.dimensions.y * t1->scale.y * 0.5f;
-  Vector2 center1 = {t1->position.x + (t1->mask.offset.x * t1->scale.x * c1) -
-                         (t1->mask.offset.y * t1->scale.y * s1),
-                     t1->position.y + (t1->mask.offset.x * t1->scale.x * s1) +
-                         (t1->mask.offset.y * t1->scale.y * c1)};
+  float p1x = TO_FLOAT(t1->subX);
+  float p1y = TO_FLOAT(t1->subY);
+  float p2x = TO_FLOAT(t2->subX);
+  float p2y = TO_FLOAT(t2->subY);
 
-  float hx2 = t2->mask.dimensions.x * t2->scale.x * 0.5f;
-  float hy2 = t2->mask.dimensions.y * t2->scale.y * 0.5f;
-  Vector2 center2 = {t2->position.x + (t2->mask.offset.x * t2->scale.x * c2) -
-                         (t2->mask.offset.y * t2->scale.y * s2),
-                     t2->position.y + (t2->mask.offset.x * t2->scale.x * s2) +
-                         (t2->mask.offset.y * t2->scale.y * c2)};
+  float s1x = (float)t1->scaleX;
+  float s1y = (float)t1->scaleY;
+  float s2x = (float)t2->scaleX;
+  float s2y = (float)t2->scaleY;
+
+  float hx1 = (float)t1->mask.width  * s1x * 0.5f;
+  float hy1 = (float)t1->mask.height * s1y * 0.5f;
+  
+  Vector2 center1 = {
+    p1x + ((float)t1->mask.offsetX * s1x * c1) - ((float)t1->mask.offsetY * s1y * s1),
+    p1y + ((float)t1->mask.offsetX * s1x * s1) + ((float)t1->mask.offsetY * s1y * c1)
+  };
+
+  float hx2 = (float)t2->mask.width  * s2x * 0.5f;
+  float hy2 = (float)t2->mask.height * s2y * 0.5f;
+  
+  Vector2 center2 = {
+    p2x + ((float)t2->mask.offsetX * s2x * c2) - ((float)t2->mask.offsetY * s2y * s2),
+    p2y + ((float)t2->mask.offsetX * s2x * s2) + ((float)t2->mask.offsetY * s2y * c2)
+  };
 
   Vector2 d = {center2.x - center1.x, center2.y - center1.y};
 
@@ -306,4 +324,65 @@ bool checkOBB(Thing *t1, Thing *t2) {
   }
 
   return true;
+}
+
+void draw_thing_mask(Thing *thing, Color color) {
+    float px = TO_FLOAT(thing->subX);
+    float py = TO_FLOAT(thing->subY);
+    float sx = (float)thing->scaleX;
+    float sy = (float)thing->scaleY;
+    
+    float rad = (float)thing->rotation * (PI / 180.0f);
+    float c = cosf(rad);
+    float s = sinf(rad);
+
+    float hx = (float)thing->mask.width  * sx * 0.5f;
+    float hy = (float)thing->mask.height * sy * 0.5f;
+
+    Vector2 center = {
+        px + ((float)thing->mask.offsetX * sx * c) - ((float)thing->mask.offsetY * sy * s),
+        py + ((float)thing->mask.offsetX * sx * s) + ((float)thing->mask.offsetY * sy * c)
+    };
+
+    Vector2 local_corners[4] = {
+        { -hx, -hy },
+        {  hx, -hy },
+        {  hx,  hy },
+        { -hx,  hy }
+    };
+
+    Vector2 world_corners[4];
+    for (int i = 0; i < 4; i++) {
+        world_corners[i].x = center.x + (local_corners[i].x * c) - (local_corners[i].y * s);
+        world_corners[i].y = center.y + (local_corners[i].x * s) + (local_corners[i].y * c);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        DrawLineV(world_corners[i], world_corners[(i + 1) % 4], color);
+    }
+}
+
+void draw_debug_masks(State *state) {
+    Color kind_colors[KIND_AMOUNT] = {
+        [NILKIND]    = BLANK,
+        [SHIPKIND]   = GREEN,
+        [ALIENKIND]  = RED,
+        [BULLETKIND] = YELLOW
+    };
+
+    for (int k = 1; k < KIND_AMOUNT; k++) {
+        u16 head = state->kindHeads[k];
+        if (head == NIL) continue;
+
+        u16 current = head;
+        do {
+            Thing *t = &state->things[current];
+            
+            if (t->mask.width != 0 && t->mask.height != 0) {
+                draw_thing_mask(t, kind_colors[k]);
+            }
+
+            current = t->nextSibId;
+        } while (current != head);
+    }
 }
