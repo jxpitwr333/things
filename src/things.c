@@ -7,8 +7,7 @@
 
 const Animation ANIMATIONS[] = {
     [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 12, .loops = true},
-    [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}
-};
+    [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}};
 
 void init(State *state) {
   state->things = malloc(MAX_THINGS * sizeof(Thing));
@@ -51,6 +50,8 @@ u16 add(State *state, Thing thing) {
   state->activeIds[state->activeCount] = slot;
   state->activeCount++;
 
+  kind_link(state, slot);
+
   return slot;
 }
 
@@ -72,8 +73,9 @@ void rem(State *state, u16 id) {
   }
 
   state->activeCount--;
-
   state->things[id].denseId = 0;
+  kind_unlink(state, id);
+
   memset(state->things[id].alarms, -1, sizeof(state->things[id].alarms));
   state->things[id].kind = NILKIND;
   state->things[id].nextSibId = state->nextEmptySlot;

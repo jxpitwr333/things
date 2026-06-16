@@ -18,44 +18,41 @@ int main(void) {
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
-  u16 ship_id = add(&state, (Thing){
-    .kind = SHIPKIND,
-    .subX = TO_FIXED(64),
-    .subY = TO_FIXED(64),
-    .scaleX = 1,
-    .scaleY = 1,
-    .spriteId = 0,
-    .mask = {
-        .width = 8,
-        .height = 8
-    }});
+  u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
+                                    .subX = TO_FIXED(64),
+                                    .subY = TO_FIXED(64),
+                                    .scaleX = 1,
+                                    .scaleY = 1,
+                                    .spriteId = 0,
+                                    .mask = {.width = 8, .height = 8}});
 
-  kind_link(&state, ship_id);
-  kind_link(&state, add(&state, (Thing){
-    .kind = ALIENKIND,
-    .subX = TO_FIXED(64),
-    .subY = TO_FIXED(24),
-    .scaleX = 1,
-    .scaleY = 1,
-    .spriteId = 2,
-    .mask = {
-        .width = 6,
-        .height = 6
-    }
-  }));
+  add(&state, (Thing){.kind = ALIENKIND,
+                      .subX = TO_FIXED(64),
+                      .subY = TO_FIXED(24),
+                      .scaleX = 1,
+                      .scaleY = 1,
+                      .spriteId = 2,
+                      .mask = {.width = 6, .height = 6}});
 
   while (!WindowShouldClose()) {
-    for (u16 i = 0; i < state.activeCount; ++i) {
+    for (u16 i = state.activeCount; i-- > 0;) {
       u16 id = state.activeIds[i];
       Thing *t = &state.things[id];
 
       if (t->kind == BULLETKIND) {
-          float rad = (float)t->rotation * (PI / 180.0f);
-          t->subX += TO_FIXED(cosf(rad) * BULLET_SPD);
-          t->subY += TO_FIXED(sinf(rad) * BULLET_SPD);
+        float rad = (float)t->rotation * (PI / 180.0f);
+
+        t->subX += TO_FIXED(cosf(rad) * BULLET_SPD);
+        t->subY += TO_FIXED(sinf(rad) * BULLET_SPD);
+
+        if (t->subY <= 0) {
+          rem(&state, id);
+          continue;
+        }
       }
 
-      t->alarms[0]++; // increment alarm[0] for animations decrement every other alarm.
+      t->alarms[0]++; // increment alarm[0] for animations decrement every other
+                      // alarm.
       for (i16 j = 1; j < MAX_ALARMS; ++j) {
         if (t->alarms[j] > 0)
           t->alarms[j]--;
@@ -113,17 +110,17 @@ void ship_update(State *state, u16 id) {
   int moveY = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
 
   if (IsKeyDown(KEY_SPACE) && ship->alarms[1] == 0) {
-      ship->alarms[1] = 7;
+    ship->alarms[1] = 7;
 
-      kind_link(state, add(state, (Thing){
-          .kind = BULLETKIND,
-          .subX = ship->subX,
-          .subY = ship->subY,
-          .rotation = 270,
-          .scaleX = 1,
-          .scaleY = 1,
-          .mask = {.width = 8, .height = 8},
-      }));
+    add(state, (Thing){
+                   .kind = BULLETKIND,
+                   .subX = ship->subX,
+                   .subY = ship->subY,
+                   .rotation = 270,
+                   .scaleX = 1,
+                   .scaleY = 1,
+                   .mask = {.width = 8, .height = 8},
+               });
   }
 
   if (moveX != 0) {
