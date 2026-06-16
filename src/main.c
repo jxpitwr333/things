@@ -5,8 +5,51 @@
 
 #define SHIP_SPD 2
 #define BULLET_SPD 5
+#define SCREEN_TILES 16
+#define MAX_FORMATION_OFFSETS 8 /*i dunno*/
 
-void ship_update(State *state, u16 id);
+typedef enum {
+	FORMATION_V,
+	FORMATION_THREE_WALL,
+	FORMATION_FOUR_WALL,
+	FORMATION_COUNT
+} FormationType;
+
+typedef struct {
+	i16 x, y;
+} Vector2Short;
+
+typedef struct {
+	u8 count;
+	i16 min_tile;
+	i16 max_tile;
+	Vector2Short offsets[MAX_FORMATION_OFFSETS];
+} Formation;
+
+const Formation FORMATIONS[] = {
+	[FORMATION_V] = {.min_tile = 2, .max_tile = SCREEN_TILES - 3, .count = 5, .offsets = {
+		{ 0,  0},
+		{-1, -1},
+		{ 1, -1},
+		{-2, -2},
+		{ 2, -2}
+	}},
+	[FORMATION_THREE_WALL] = {.min_tile = 0, .max_tile = SCREEN_TILES - 3, .count = 3, .offsets = {
+		{0, 0},
+		{1, 0},
+		{2, 0}
+	}},
+	[FORMATION_FOUR_WALL] = {.min_tile = 0, .max_tile = SCREEN_TILES - 4, .count = 4, .offsets = {
+		{0, 0},
+		{1, 0},
+		{2, 0},
+		{3, 0}
+	}},
+};
+
+void shipUpdate(State *state, u16 id);
+void spawnerUpdate(State *state);
+void onBulletHitAlien(State* state, u16 bulletId, u16 alienId);
 
 int main(void) {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
@@ -26,18 +69,14 @@ int main(void) {
                                     .spriteId = 0,
                                     .mask = {.width = 8, .height = 8}});
 
-  add(&state, (Thing){.kind = ALIENKIND,
-                      .subX = TO_FIXED(64),
-                      .subY = TO_FIXED(24),
-                      .scaleX = 1,
-                      .scaleY = 1,
-                      .spriteId = 2,
-                      .mask = {.width = 6, .height = 6}});
-
   while (!WindowShouldClose()) {
     for (u16 i = state.activeCount; i-- > 0;) {
       u16 id = state.activeIds[i];
       Thing *t = &state.things[id];
+
+      if (t->kind == ALIENKIND) {
+		t->subY += TO_FIXED(0.25);
+	  }
 
       if (t->kind == BULLETKIND) {
         float rad = (float)t->rotation * (PI / 180.0f);
@@ -59,7 +98,9 @@ int main(void) {
       }
     }
 
-    ship_update(&state, ship_id);
+    shipUpdate(&state, ship_id);
+	spawnerUpdate(&state);
+	checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
 
     BeginTextureMode(renderTexture);
     ClearBackground(BLACK);
@@ -68,19 +109,19 @@ int main(void) {
       u16 id = state.activeIds[i];
 
       if (state.things[id].kind == ALIENKIND) {
-        drawanim(&spritesheet, &state.things[id], &ANIMATIONS[ANIM_GREEN]);
+        drawAnim(&spritesheet, &state.things[id], &ANIMATIONS[ANIM_GREEN]);
         continue;
       }
 
       if (state.things[id].kind == BULLETKIND) {
-        drawanim(&spritesheet, &state.things[id], &ANIMATIONS[ANIM_BULLET]);
+        drawAnim(&spritesheet, &state.things[id], &ANIMATIONS[ANIM_BULLET]);
         continue;
       }
 
       draw(&spritesheet, &state.things[id]);
     }
 
-    draw_debug_masks(&state);
+    //drawDebugMasks(&state);
     EndTextureMode();
 
     BeginDrawing();
@@ -103,7 +144,7 @@ int main(void) {
   return 0;
 }
 
-void ship_update(State *state, u16 id) {
+void shipUpdate(State *state, u16 id) {
   Thing *ship = get(state->things, id);
 
   int moveX = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
@@ -133,4 +174,41 @@ void ship_update(State *state, u16 id) {
 
   ship->subX += TO_FIXED(SHIP_SPD * moveX);
   ship->subY += TO_FIXED(SHIP_SPD * moveY);
+}
+
+#define SECONDS(n) (n * ((i16)60))
+
+// [min, max)
+i16 randomRange_i16(i16 min, i16 max) {
+	return (rand() % (max - min)) + min;
+}
+
+void spawnerUpdate(State *state) {
+	state->spawnerCounter++;
+
+	if (state->spawnerCounter >= SECONDS(3)) {
+		state->spawnerCounter = 0;
+
+		Formation chosenFormation = FORMATIONS[randomRange_i16(0, FORMATION_COUNT)];
+		i16 baseTile = randomRange_i16(chosenFormation.min_tile, chosenFormation.max_tile + 1);
+
+		for (i16 i = 0; i < chosenFormation.count; ++i) {
+			Vector2Short offset = chosenFormation.offsets[i];
+			i16 tileX = baseTile + offset.x;
+			i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
+			add(state, (Thing){
+				.kind = ALIENKIND,
+				.subX = TO_FIXED(tileX * TILE_SIZE + HALF_TILE_SIZE),
+				.subY = TO_FIXED(posY),
+				.mask = {.width = 6, .height = 6},
+				.scaleX = 1,
+				.scaleY = 1,
+			});
+		}
+	}
+}
+
+void onBulletHitAlien(State* state, u16 bulletId, u16 alienId) {
+	rem(state, bulletId);
+	rem(state, alienId);
 }

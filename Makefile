@@ -15,7 +15,7 @@ ifeq ($(OS),Windows_NT)
     RM = rmdir /s /q
     MKDIR = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
     TARGET_EXT = .exe
-    RUN_CMD = $(subst /,\,$(TARGET))
+    RUN_CMD = $(TARGET)
 else
     LIBS = -L/usr/local/lib -lraylib -lm -lpthread -ldl -lrt -lX11
     RM = rm -rf
@@ -31,19 +31,19 @@ TARGET = $(BUILD_DIR)/game$(TARGET_EXT)
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-all: $(TARGET)
-
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LIBS)
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+all: $(BUILD_DIR) $(TARGET)
 
 $(BUILD_DIR):
 	$(MKDIR)
 
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LIBS)
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
 clean:
-	$(RM) $(BUILD_DIR)
+	rm -f $(OBJS) $(TARGET)
 
 run: $(TARGET)
 	$(RUN_CMD)

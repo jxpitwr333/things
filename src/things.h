@@ -38,8 +38,6 @@ typedef enum {
   KIND_AMOUNT,
 } Kind;
 
-#define KIND_COUNT (KIND_AMOUNT - 1)
-
 typedef struct {
 } ShipTrait;
 typedef struct {
@@ -79,7 +77,8 @@ typedef struct {
   u16 activeCount;
   u16 nextEmptySlot;
   Texture *spritesheet;
-  u16 kindHeads[KIND_COUNT];
+  i16 spawnerCounter;
+  u16 kindHeads[KIND_AMOUNT];
 } State;
 
 typedef enum {
@@ -88,24 +87,27 @@ typedef enum {
 } AnimNames;
 
 typedef struct {
+  bool loops;
   u8 frames[MAX_FRAMES];
   u8 ticksPerFrame;
-  bool loops;
 } Animation;
 
 extern const Animation ANIMATIONS[];
+
+typedef void (*CollisionCallback)(State *state, u16 id1, u16 id2);
 
 void init(State *state);
 u16 add(State *state, Thing thing);
 Thing *get(Thing *things, u16 id);
 void rem(State *state, u16 id);
 void draw(Texture2D *spritesheet, Thing *thing);
-void drawanim(Texture2D *spritesheet, Thing *thing, const Animation *anim);
-void kind_link(State *state, u16 id);
-void kind_unlink(State *state, u16 id);
+void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim);
+void kindLink(State *state, u16 id);
+void kindUnlink(State *state, u16 id);
 
 bool checkOBB(Thing *t1, Thing *t2);
-void draw_thing_mask(Thing *thing, Color color);
-void draw_debug_masks(State *state);
+void drawThingMask(Thing *thing, Color color);
+void drawDebugMasks(State *state);
+void checkCollisions(State *state, Kind k1, Kind k2, CollisionCallback onCollide);
 
 #endif

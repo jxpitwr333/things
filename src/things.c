@@ -6,7 +6,7 @@
 #include <string.h>
 
 const Animation ANIMATIONS[] = {
-    [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 12, .loops = true},
+    [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 16, .loops = true},
     [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}};
 
 void init(State *state) {
@@ -50,7 +50,7 @@ u16 add(State *state, Thing thing) {
   state->activeIds[state->activeCount] = slot;
   state->activeCount++;
 
-  kind_link(state, slot);
+  kindLink(state, slot);
 
   return slot;
 }
@@ -74,7 +74,7 @@ void rem(State *state, u16 id) {
 
   state->activeCount--;
   state->things[id].denseId = 0;
-  kind_unlink(state, id);
+  kindUnlink(state, id);
 
   memset(state->things[id].alarms, -1, sizeof(state->things[id].alarms));
   state->things[id].kind = NILKIND;
@@ -86,8 +86,8 @@ void draw(Texture2D *spritesheet, Thing *thing) {
   u16 col = thing->spriteId % SHEET_COLUMNS;
   u16 row = thing->spriteId / SHEET_COLUMNS;
 
-  float renderX = TO_FLOAT(thing->subX);
-  float renderY = TO_FLOAT(thing->subY);
+  float renderX = floorf(TO_FLOAT(thing->subX));
+  float renderY = floorf(TO_FLOAT(thing->subY));
 
   float srcWidth = (float)TILE_SIZE * (float)thing->scaleX;
   float srcHeight = (float)TILE_SIZE * (float)thing->scaleY;
@@ -103,7 +103,7 @@ void draw(Texture2D *spritesheet, Thing *thing) {
       (Vector2){HALF_TILE_SIZE, HALF_TILE_SIZE}, (float)thing->rotation, WHITE);
 }
 
-void drawanim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
+void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
   i16 currentTick = thing->alarms[0];
 
   int totalAnimationTicks = anim->ticksPerFrame * MAX_FRAMES;
@@ -124,8 +124,8 @@ void drawanim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
   u16 col = actualSpriteId % SHEET_COLUMNS;
   u16 row = actualSpriteId / SHEET_COLUMNS;
 
-  float renderX = TO_FLOAT(thing->subX);
-  float renderY = TO_FLOAT(thing->subY);
+  float renderX = floorf(TO_FLOAT(thing->subX));
+  float renderY = floorf(TO_FLOAT(thing->subY));
   float srcWidth = (float)TILE_SIZE * (float)thing->scaleX;
   float srcHeight = (float)TILE_SIZE * (float)thing->scaleY;
 
@@ -136,7 +136,7 @@ void drawanim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
       (Vector2){HALF_TILE_SIZE, HALF_TILE_SIZE}, (float)thing->rotation, WHITE);
 }
 
-void kind_link(State *state, u16 id) {
+void kindLink(State *state, u16 id) {
   if (state->things[id].kind == NILKIND)
     return;
   Thing *thing = &state->things[id];
@@ -158,7 +158,7 @@ void kind_link(State *state, u16 id) {
   }
 }
 
-void kind_unlink(State *state, u16 id) {
+void kindUnlink(State *state, u16 id) {
   if (state->things[id].kind == NILKIND)
     return;
   Thing *thing = &state->things[id];
@@ -234,7 +234,7 @@ bool checkOBB(Thing *t1, Thing *t2) {
   return true;
 }
 
-void draw_thing_mask(Thing *thing, Color color) {
+void drawThingMask(Thing *thing, Color color) {
   float px = TO_FLOAT(thing->subX);
   float py = TO_FLOAT(thing->subY);
   float sx = (float)thing->scaleX;
@@ -267,7 +267,7 @@ void draw_thing_mask(Thing *thing, Color color) {
   }
 }
 
-void draw_debug_masks(State *state) {
+void drawDebugMasks(State *state) {
   Color kind_colors[KIND_AMOUNT] = {[NILKIND] = BLANK,
                                     [SHIPKIND] = GREEN,
                                     [ALIENKIND] = RED,
@@ -283,10 +283,60 @@ void draw_debug_masks(State *state) {
       Thing *t = &state->things[current];
 
       if (t->mask.width != 0 && t->mask.height != 0) {
-        draw_thing_mask(t, kind_colors[k]);
+        drawThingMask(t, kind_colors[k]);
       }
 
       current = t->nextSibId;
     } while (current != head);
   }
+}
+
+void checkCollisions(State *state, Kind k1, Kind k2, CollisionCallback onCollide) {
+    u16 head1 = state->kindHeads[k1];
+    u16 head2 = state->kindHeads[k2];
+
+    if (head1 == NIL || head2 == NIL) return;
+
+    u16 currentThing1 = head1;
+    do {
+        bool thing1Removed = false;
+        u16 next1 = state->things[currentThing1].nextSibId;
+        Thing *t1 = &state->things[currentThing1];
+
+        u16 currentThing2 = head2;
+        if (currentThing2 != NIL) {
+            do {
+                u16 next2 = state->things[currentThing2].nextSibId;
+                Thing *t2 = &state->things[currentThing2];
+
+                if (checkOBB(t1, t2)) {
+                    if (currentThing1 == head1) head1 = state->things[currentThing1].nextSibId;
+                    if (currentThing2 == head2) head2 = state->things[currentThing2].nextSibId;
+
+                    onCollide(state, currentThing1, currentThing2);
+
+                    thing1Removed = true;
+                    break;
+                }
+
+                currentThing2 = next2;
+                if (state->kindHeads[k2] == NIL) {
+                    head2 = NIL;
+                    break;
+                }
+            } while (currentThing2 != head2);
+        }
+
+        if (thing1Removed) {
+            currentThing1 = next1;
+        } else {
+            currentThing1 = t1->nextSibId;
+        }
+
+        if (state->kindHeads[k1] == NIL) {
+            head1 = NIL;
+            break;
+        }
+
+    } while (currentThing1 != head1);
 }
