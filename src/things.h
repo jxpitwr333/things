@@ -25,8 +25,6 @@ typedef uint8_t u8;
 #define SHEET_COLUMNS ((u16)11)
 #define SHEET_ROWS ((u16)2)
 
-#define SHIP_SPD 2
-
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #define SUB_POSITION ((float)256.0f)
 #define TO_FIXED(f) ((i16)((f) * SUB_POSITION))
@@ -63,7 +61,7 @@ typedef struct {
   i16 subY;
   i8 scaleX;
   i8 scaleY;
-  i8 rotation;
+  i16 rotation;
   Mask mask;
 
   i8 spriteId;
@@ -86,6 +84,7 @@ typedef struct {
 
 typedef enum {
   ANIM_GREEN,
+  ANIM_BULLET
 } AnimNames;
 
 typedef struct {

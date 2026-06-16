@@ -1,5 +1,10 @@
 #include "things.h"
+#include <math.h>
+#include <raylib.h>
 #include <stdlib.h>
+
+#define SHIP_SPD 2
+#define BULLET_SPD 5
 
 void ship_update(State *state, u16 id);
 
@@ -44,6 +49,12 @@ int main(void) {
       u16 id = state.activeIds[i];
       Thing *t = &state.things[id];
 
+      if (t->kind == BULLETKIND) {
+          float rad = (float)t->rotation * (PI / 180.0f);
+          t->subX += TO_FIXED(cosf(rad) * BULLET_SPD);
+          t->subY += TO_FIXED(sinf(rad) * BULLET_SPD);
+      }
+
       t->alarms[0]++; // increment alarm[0] for animations decrement every other alarm.
       for (i16 j = 1; j < MAX_ALARMS; ++j) {
         if (t->alarms[j] > 0)
@@ -64,10 +75,15 @@ int main(void) {
         continue;
       }
 
+      if (state.things[id].kind == BULLETKIND) {
+        drawanim(&spritesheet, &state.things[id], &ANIMATIONS[ANIM_BULLET]);
+        continue;
+      }
+
       draw(&spritesheet, &state.things[id]);
     }
 
-    // draw_debug_masks(&state);
+    draw_debug_masks(&state);
     EndTextureMode();
 
     BeginDrawing();
@@ -95,6 +111,20 @@ void ship_update(State *state, u16 id) {
 
   int moveX = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
   int moveY = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
+
+  if (IsKeyDown(KEY_SPACE) && ship->alarms[1] == 0) {
+      ship->alarms[1] = 7;
+
+      kind_link(state, add(state, (Thing){
+          .kind = BULLETKIND,
+          .subX = ship->subX,
+          .subY = ship->subY,
+          .rotation = 270,
+          .scaleX = 1,
+          .scaleY = 1,
+          .mask = {.width = 8, .height = 8},
+      }));
+  }
 
   if (moveX != 0) {
     ship->spriteId = 1;

@@ -1,11 +1,13 @@
 #include "things.h"
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 const Animation ANIMATIONS[] = {
-    [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 12, .loops = true}
+    [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 12, .loops = true},
+    [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}
 };
 
 void init(State *state) {
