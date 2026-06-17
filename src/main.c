@@ -5,13 +5,14 @@
 #include "things.h"
 #include <math.h>
 #include <raylib.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define SHIP_SPD 2
 #define BULLET_SPD 5
 #define SCREEN_TILES 16
 #define MAX_FORMATION_OFFSETS 8
-
+#define SECONDS(n) (n * ((i16)60))
 typedef enum {
   FORMATION_V,
   FORMATION_THREE_WALL,
@@ -92,7 +93,7 @@ int main(void) {
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
   u16 ship_id = add(&state, (Thing){
-      .kind = SHIPKIND,
+    .kind = SHIPKIND,
     .subX = TO_FIXED(64),
     .subY = TO_FIXED(64),
     .scaleX = TO_FIXED(1),
@@ -117,7 +118,7 @@ int main(void) {
         if (template.shrink != 0) {
           t->scaleX -= template.shrink;
           t->scaleY -= template.shrink;
-        }
+		}
       }
 
       if (t->kind == ALIENKIND) {
@@ -150,23 +151,44 @@ int main(void) {
     BeginTextureMode(renderTexture);
     ClearBackground(BLACK);
 
+	char buffer[32];
+	snprintf(buffer, sizeof(buffer), "things: %d", state.activeCount);
+	DrawText(buffer, 20, 20, 8, GREEN);
+
     for (u16 i = 0; i < state.activeCount; ++i) {
       u16 id = state.activeIds[i];
+	  Thing* thing = &state.things[id];
 
-      if (state.things[id].kind == ALIENKIND) {
-        drawAnim(&spritesheet, &state.things[id], &ANIMATIONS[ANIM_GREEN]);
-        continue;
-      }
+	  switch (thing->kind) {
+		case PARTICLEKIND:
+			Particle template = PARTICLES[thing->parentId];
+			if (template.colorCount != 0) {
+				if (template.colorCount == 1) {
+					DrawEllipse((int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY), TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY), *template.colorPalette[0]);
+				} else {
+					float percentage = (float)thing->alarms[1] / (float)template.lifetime;
+					int idx = (int)floorf(percentage * (float)template.colorCount);
+					Color color = (*template.colorPalette)[clamp(idx, 0, template.colorCount - 1)];
+					DrawEllipse((int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY), TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY), color);
+				}
+			}
+		break;
 
-      if (state.things[id].kind == BULLETKIND) {
-        drawAnim(&spritesheet, &state.things[id], &ANIMATIONS[ANIM_BULLET]);
-        continue;
-      }
+		case BULLETKIND:
+			drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
+		break;
 
-      drawThing(&spritesheet, &state.things[id]);
+		case ALIENKIND:
+			drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_GREEN]);
+		break;
+
+		default:
+			drawThing(&spritesheet, thing);
+		break;
+	  }
     }
 
-    // drawDebugMasks(&state);
+    //drawDebugMasks(&state);
     EndTextureMode();
 
     BeginDrawing();
@@ -211,20 +233,28 @@ void shipUpdate(State *state, u16 id) {
 
   if (moveX != 0) {
     ship->spriteId = 1;
-    ship->scaleX = (i8)moveX;
+    ship->scaleX = TO_FIXED(moveX);
   } else {
     ship->spriteId = 0;
-    ship->scaleX = (i8)1;
+    ship->scaleX = TO_FIXED(1);
+  }
+
+  if (moveX != 0 || moveY != 0) {
+	i16 scale = PARTICLES[PARTICLE_EXHAUST].scale;
+	add(state, (Thing){
+		.kind = PARTICLEKIND,
+		.parentId = PARTICLE_EXHAUST,
+		.subX = ship->subX + TO_FIXED(randomRange(-2, 2)),
+		.subY = ship->subY + TO_FIXED(randomRange(-2, 2)),
+		.scaleX = scale,
+		.scaleY = scale,
+		.alarms = { [1] = PARTICLES[PARTICLE_EXHAUST].lifetime }
+	});
   }
 
   ship->subX += TO_FIXED(SHIP_SPD * moveX);
   ship->subY += TO_FIXED(SHIP_SPD * moveY);
 }
-
-#define SECONDS(n) (n * ((i16)60))
-
-// [min, max)
-i16 randomRange_i16(i16 min, i16 max) { return (rand() % (max - min)) + min; }
 
 void spawnerUpdate(State *state) {
   state->spawnerCounter++;
@@ -232,9 +262,9 @@ void spawnerUpdate(State *state) {
   if (state->spawnerCounter >= SECONDS(3)) {
     state->spawnerCounter = 0;
 
-    Formation chosenFormation = FORMATIONS[randomRange_i16(0, FORMATION_COUNT)];
+    Formation chosenFormation = FORMATIONS[randomRange(0, FORMATION_COUNT)];
     i16 baseTile =
-        randomRange_i16(chosenFormation.min_tile, chosenFormation.max_tile + 1);
+        randomRange(chosenFormation.min_tile, chosenFormation.max_tile + 1);
 
     for (i16 i = 0; i < chosenFormation.count; ++i) {
       Vector2Short offset = chosenFormation.offsets[i];

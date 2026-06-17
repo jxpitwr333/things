@@ -13,6 +13,7 @@ const Animation ANIMATIONS[] = {
 void init(State *state) {
   state->things = malloc(MAX_THINGS * sizeof(Thing));
   state->activeIds = malloc(MAX_THINGS * sizeof(u16));
+  state->activeCount = 0;
   memset(state->activeIds, NIL, MAX_THINGS * sizeof(u16));
 
   state->things[NIL] = (Thing){.id = NIL, .kind = NILKIND};
@@ -91,13 +92,20 @@ static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY,
   float renderY = floorf(TO_FLOAT(subY));
 
   float f32TileSize = (float)TILE_SIZE;
+  float absScaleX = fabsf(TO_FLOAT(scaleX));
+  float absScaleY = fabsf(TO_FLOAT(scaleY));
 
-  float destWidth = f32TileSize * TO_FLOAT(scaleX);
-  float destHeight = f32TileSize* TO_FLOAT(scaleY);
+  float destWidth = f32TileSize * absScaleX;
+  float destHeight = f32TileSize * absScaleY;
+
+  float srcWidth = f32TileSize;
+  float srcHeight = f32TileSize;
+  if (scaleX < 0) srcWidth = -srcWidth;
+  if (scaleY < 0) srcHeight = -srcHeight;
 
   DrawTexturePro(
       *spritesheet,
-      (Rectangle){.x = col * TILE_SIZE, .y = row * TILE_SIZE, .width = f32TileSize, .height = f32TileSize},
+      (Rectangle){.x = col * TILE_SIZE, .y = row * TILE_SIZE, .width = srcWidth, .height = srcHeight},
       (Rectangle){.x = renderX, .y = renderY, .width = destWidth, .height = destHeight},
       (Vector2){destWidth * 0.5f, destHeight * 0.5f},
       (float)rotation, WHITE);
@@ -327,4 +335,9 @@ void checkCollisions(State *state, Kind k1, Kind k2,
     }
 
   } while (currentThing1 != head1);
+}
+
+int randomRange(int min, int max) {
+	// [min, max)
+	return (rand() % (max - min)) + min;
 }
