@@ -1,5 +1,6 @@
 /*
  * TODO: standardize thing stats in templates, otherwise i have to keep chasing values around everytime i do a rewrite.
+ * TODO: draw order
  */
 
 #include "things.h"
@@ -13,6 +14,7 @@
 #define SCREEN_TILES 16
 #define MAX_FORMATION_OFFSETS 8
 #define SECONDS(n) (n * ((i16)60))
+
 typedef enum {
   FORMATION_V,
   FORMATION_THREE_WALL,
@@ -254,6 +256,9 @@ void shipUpdate(State *state, u16 id) {
 
   ship->subX += TO_FIXED(SHIP_SPD * moveX);
   ship->subY += TO_FIXED(SHIP_SPD * moveY);
+
+  ship->subX = TO_FIXED(fclamp(TO_FLOAT(ship->subX), (float)HALF_TILE_SIZE, (float)(GAME_WIDTH - HALF_TILE_SIZE)));
+  ship->subY = TO_FIXED(fclamp(TO_FLOAT(ship->subY), (float)HALF_TILE_SIZE, (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
 }
 
 void spawnerUpdate(State *state) {
