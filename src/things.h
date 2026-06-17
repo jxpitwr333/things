@@ -35,6 +35,7 @@ typedef enum {
   SHIPKIND,
   ALIENKIND,
   BULLETKIND,
+  PARTICLEKIND,
   KIND_AMOUNT,
 } Kind;
 
@@ -46,25 +47,24 @@ typedef struct {
 typedef struct {
   i8 width;
   i8 height;
-  i8 offsetX;
-  i8 offsetY;
 } Mask;
 
 typedef struct {
   u16 id;
   u16 denseId;
+
   u8 kind;
+  i8 spriteId;
 
   i16 subX;
   i16 subY;
-  i8 scaleX;
-  i8 scaleY;
+  i16 scaleX;
+  i16 scaleY;
   i16 rotation;
   Mask mask;
 
-  i8 spriteId;
-  i16 alarms[MAX_ALARMS]; // alarm[0] is reserved for ticking the thing's animation.
-
+  i16 alarms[MAX_ALARMS]; // alarm[0] is reserved for ticking the thing's
+                          // animation.
   u16 parentId;
   u16 firstChildId;
   u16 nextSibId;
@@ -81,15 +81,12 @@ typedef struct {
   u16 kindHeads[KIND_AMOUNT];
 } State;
 
-typedef enum {
-  ANIM_GREEN,
-  ANIM_BULLET
-} AnimNames;
+typedef enum { ANIM_GREEN, ANIM_BULLET } AnimNames;
 
 typedef struct {
   bool loops;
-  u8 frames[MAX_FRAMES];
-  u8 ticksPerFrame;
+  i8 frames[MAX_FRAMES];
+  i8 ticksPerFrame;
 } Animation;
 
 extern const Animation ANIMATIONS[];
@@ -100,7 +97,7 @@ void init(State *state);
 u16 add(State *state, Thing thing);
 Thing *get(Thing *things, u16 id);
 void rem(State *state, u16 id);
-void draw(Texture2D *spritesheet, Thing *thing);
+void drawThing(Texture2D *spritesheet, Thing *thing);
 void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim);
 void kindLink(State *state, u16 id);
 void kindUnlink(State *state, u16 id);
@@ -108,6 +105,7 @@ void kindUnlink(State *state, u16 id);
 bool checkOBB(Thing *t1, Thing *t2);
 void drawThingMask(Thing *thing, Color color);
 void drawDebugMasks(State *state);
-void checkCollisions(State *state, Kind k1, Kind k2, CollisionCallback onCollide);
+void checkCollisions(State *state, Kind k1, Kind k2,
+                     CollisionCallback onCollide);
 
 #endif

@@ -1,5 +1,6 @@
 #include "things.h"
 #include <math.h>
+#include <raylib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,25 +83,24 @@ void rem(State *state, u16 id) {
   state->nextEmptySlot = id;
 }
 
-void draw(Texture2D *spritesheet, Thing *thing) {
-  u16 col = thing->spriteId % SHEET_COLUMNS;
-  u16 row = thing->spriteId / SHEET_COLUMNS;
+static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY, i16 scaleX, i16 scaleY, i16 rotation) {
+  u16 col = spriteId % SHEET_COLUMNS;
+  u16 row = spriteId / SHEET_COLUMNS;
 
-  float renderX = floorf(TO_FLOAT(thing->subX));
-  float renderY = floorf(TO_FLOAT(thing->subY));
+  float renderX = floorf(TO_FLOAT(subX));
+  float renderY = floorf(TO_FLOAT(subY));
 
-  float srcWidth = (float)TILE_SIZE * (float)thing->scaleX;
-  float srcHeight = (float)TILE_SIZE * (float)thing->scaleY;
+  float f32TileSize = (float)TILE_SIZE;
+
+  float destWidth = f32TileSize * TO_FLOAT(scaleX);
+  float destHeight = f32TileSize* TO_FLOAT(scaleY);
 
   DrawTexturePro(
       *spritesheet,
-      (Rectangle){.x = col * TILE_SIZE,
-                  .y = row * TILE_SIZE,
-                  .width = srcWidth,
-                  .height = srcHeight},
-      (Rectangle){
-          .x = renderX, .y = renderY, .width = TILE_SIZE, .height = TILE_SIZE},
-      (Vector2){HALF_TILE_SIZE, HALF_TILE_SIZE}, (float)thing->rotation, WHITE);
+      (Rectangle){.x = col * TILE_SIZE, .y = row * TILE_SIZE, .width = f32TileSize, .height = f32TileSize},
+      (Rectangle){.x = renderX, .y = renderY, .width = destWidth, .height = destHeight},
+      (Vector2){destWidth * 0.5f, destHeight * 0.5f},
+      (float)rotation, WHITE);
 }
 
 void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
@@ -117,23 +117,15 @@ void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
     }
   }
 
-  u8 frameIndex = currentTick / anim->ticksPerFrame;
+  i8 frameIndex = currentTick / anim->ticksPerFrame;
 
-  u8 actualSpriteId = anim->frames[frameIndex];
+  i8 actualSpriteId = anim->frames[frameIndex];
 
-  u16 col = actualSpriteId % SHEET_COLUMNS;
-  u16 row = actualSpriteId / SHEET_COLUMNS;
+  drawSprite(spritesheet, actualSpriteId, thing->subX, thing->subY, thing->scaleX, thing->scaleY, thing->rotation);
+}
 
-  float renderX = floorf(TO_FLOAT(thing->subX));
-  float renderY = floorf(TO_FLOAT(thing->subY));
-  float srcWidth = (float)TILE_SIZE * (float)thing->scaleX;
-  float srcHeight = (float)TILE_SIZE * (float)thing->scaleY;
-
-  DrawTexturePro(
-      *spritesheet,
-      (Rectangle){col * TILE_SIZE, row * TILE_SIZE, srcWidth, srcHeight},
-      (Rectangle){renderX, renderY, TILE_SIZE, TILE_SIZE},
-      (Vector2){HALF_TILE_SIZE, HALF_TILE_SIZE}, (float)thing->rotation, WHITE);
+void drawThing(Texture2D* spritesheet, Thing* thing) {
+    drawSprite(spritesheet, thing->spriteId, thing->subX, thing->subY, thing->scaleX, thing->scaleY, thing->rotation);
 }
 
 void kindLink(State *state, u16 id) {
@@ -195,26 +187,20 @@ bool checkOBB(Thing *t1, Thing *t2) {
   float p2x = TO_FLOAT(t2->subX);
   float p2y = TO_FLOAT(t2->subY);
 
-  float s1x = (float)t1->scaleX;
-  float s1y = (float)t1->scaleY;
-  float s2x = (float)t2->scaleX;
-  float s2y = (float)t2->scaleY;
+  float s1x = TO_FLOAT(t1->scaleX);
+  float s1y = TO_FLOAT(t1->scaleY);
+  float s2x = TO_FLOAT(t2->scaleX);
+  float s2y = TO_FLOAT(t2->scaleY);
 
   float hx1 = (float)t1->mask.width * s1x * 0.5f;
   float hy1 = (float)t1->mask.height * s1y * 0.5f;
 
-  Vector2 center1 = {p1x + ((float)t1->mask.offsetX * s1x * c1) -
-                         ((float)t1->mask.offsetY * s1y * s1),
-                     p1y + ((float)t1->mask.offsetX * s1x * s1) +
-                         ((float)t1->mask.offsetY * s1y * c1)};
+  Vector2 center1 = {p1x, p1y};
 
   float hx2 = (float)t2->mask.width * s2x * 0.5f;
   float hy2 = (float)t2->mask.height * s2y * 0.5f;
 
-  Vector2 center2 = {p2x + ((float)t2->mask.offsetX * s2x * c2) -
-                         ((float)t2->mask.offsetY * s2y * s2),
-                     p2y + ((float)t2->mask.offsetX * s2x * s2) +
-                         ((float)t2->mask.offsetY * s2y * c2)};
+  Vector2 center2 = {p2x, p2y};
 
   Vector2 d = {center2.x - center1.x, center2.y - center1.y};
 
@@ -237,8 +223,9 @@ bool checkOBB(Thing *t1, Thing *t2) {
 void drawThingMask(Thing *thing, Color color) {
   float px = TO_FLOAT(thing->subX);
   float py = TO_FLOAT(thing->subY);
-  float sx = (float)thing->scaleX;
-  float sy = (float)thing->scaleY;
+
+  float sx = TO_FLOAT(thing->scaleX);
+  float sy = TO_FLOAT(thing->scaleY);
 
   float rad = (float)thing->rotation * (PI / 180.0f);
   float c = cosf(rad);
@@ -247,10 +234,7 @@ void drawThingMask(Thing *thing, Color color) {
   float hx = (float)thing->mask.width * sx * 0.5f;
   float hy = (float)thing->mask.height * sy * 0.5f;
 
-  Vector2 center = {px + ((float)thing->mask.offsetX * sx * c) -
-                        ((float)thing->mask.offsetY * sy * s),
-                    py + ((float)thing->mask.offsetX * sx * s) +
-                        ((float)thing->mask.offsetY * sy * c)};
+  Vector2 center = {px, py};
 
   Vector2 local_corners[4] = {{-hx, -hy}, {hx, -hy}, {hx, hy}, {-hx, hy}};
 
@@ -291,52 +275,56 @@ void drawDebugMasks(State *state) {
   }
 }
 
-void checkCollisions(State *state, Kind k1, Kind k2, CollisionCallback onCollide) {
-    u16 head1 = state->kindHeads[k1];
-    u16 head2 = state->kindHeads[k2];
+void checkCollisions(State *state, Kind k1, Kind k2,
+                     CollisionCallback onCollide) {
+  u16 head1 = state->kindHeads[k1];
+  u16 head2 = state->kindHeads[k2];
 
-    if (head1 == NIL || head2 == NIL) return;
+  if (head1 == NIL || head2 == NIL)
+    return;
 
-    u16 currentThing1 = head1;
-    do {
-        bool thing1Removed = false;
-        u16 next1 = state->things[currentThing1].nextSibId;
-        Thing *t1 = &state->things[currentThing1];
+  u16 currentThing1 = head1;
+  do {
+    bool thing1Removed = false;
+    u16 next1 = state->things[currentThing1].nextSibId;
+    Thing *t1 = &state->things[currentThing1];
 
-        u16 currentThing2 = head2;
-        if (currentThing2 != NIL) {
-            do {
-                u16 next2 = state->things[currentThing2].nextSibId;
-                Thing *t2 = &state->things[currentThing2];
+    u16 currentThing2 = head2;
+    if (currentThing2 != NIL) {
+      do {
+        u16 next2 = state->things[currentThing2].nextSibId;
+        Thing *t2 = &state->things[currentThing2];
 
-                if (checkOBB(t1, t2)) {
-                    if (currentThing1 == head1) head1 = state->things[currentThing1].nextSibId;
-                    if (currentThing2 == head2) head2 = state->things[currentThing2].nextSibId;
+        if (checkOBB(t1, t2)) {
+          if (currentThing1 == head1)
+            head1 = state->things[currentThing1].nextSibId;
+          if (currentThing2 == head2)
+            head2 = state->things[currentThing2].nextSibId;
 
-                    onCollide(state, currentThing1, currentThing2);
+          onCollide(state, currentThing1, currentThing2);
 
-                    thing1Removed = true;
-                    break;
-                }
-
-                currentThing2 = next2;
-                if (state->kindHeads[k2] == NIL) {
-                    head2 = NIL;
-                    break;
-                }
-            } while (currentThing2 != head2);
+          thing1Removed = true;
+          break;
         }
 
-        if (thing1Removed) {
-            currentThing1 = next1;
-        } else {
-            currentThing1 = t1->nextSibId;
+        currentThing2 = next2;
+        if (state->kindHeads[k2] == NIL) {
+          head2 = NIL;
+          break;
         }
+      } while (currentThing2 != head2);
+    }
 
-        if (state->kindHeads[k1] == NIL) {
-            head1 = NIL;
-            break;
-        }
+    if (thing1Removed) {
+      currentThing1 = next1;
+    } else {
+      currentThing1 = t1->nextSibId;
+    }
 
-    } while (currentThing1 != head1);
+    if (state->kindHeads[k1] == NIL) {
+      head1 = NIL;
+      break;
+    }
+
+  } while (currentThing1 != head1);
 }

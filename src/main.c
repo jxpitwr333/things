@@ -1,3 +1,7 @@
+/*
+ * TODO: standardize thing stats in templates, otherwise i have to keep chasing values around everytime i do a rewrite.
+ */
+
 #include "things.h"
 #include <math.h>
 #include <raylib.h>
@@ -6,50 +10,76 @@
 #define SHIP_SPD 2
 #define BULLET_SPD 5
 #define SCREEN_TILES 16
-#define MAX_FORMATION_OFFSETS 8 /*i dunno*/
+#define MAX_FORMATION_OFFSETS 8
 
 typedef enum {
-	FORMATION_V,
-	FORMATION_THREE_WALL,
-	FORMATION_FOUR_WALL,
-	FORMATION_COUNT
+  FORMATION_V,
+  FORMATION_THREE_WALL,
+  FORMATION_FOUR_WALL,
+  FORMATION_COUNT
 } FormationType;
 
 typedef struct {
-	i16 x, y;
+  i16 x, y;
 } Vector2Short;
 
 typedef struct {
-	u8 count;
-	i16 min_tile;
-	i16 max_tile;
-	Vector2Short offsets[MAX_FORMATION_OFFSETS];
+  u8 count;
+  i16 min_tile;
+  i16 max_tile;
+  Vector2Short offsets[MAX_FORMATION_OFFSETS];
 } Formation;
 
 const Formation FORMATIONS[] = {
-	[FORMATION_V] = {.min_tile = 2, .max_tile = SCREEN_TILES - 3, .count = 5, .offsets = {
-		{ 0,  0},
-		{-1, -1},
-		{ 1, -1},
-		{-2, -2},
-		{ 2, -2}
-	}},
-	[FORMATION_THREE_WALL] = {.min_tile = 0, .max_tile = SCREEN_TILES - 3, .count = 3, .offsets = {
-		{0, 0},
-		{1, 0},
-		{2, 0}
-	}},
-	[FORMATION_FOUR_WALL] = {.min_tile = 0, .max_tile = SCREEN_TILES - 4, .count = 4, .offsets = {
-		{0, 0},
-		{1, 0},
-		{2, 0},
-		{3, 0}
-	}},
+    [FORMATION_V] = {.min_tile = 2,
+                     .max_tile = SCREEN_TILES - 3,
+                     .count = 5,
+                     .offsets = {{0, 0}, {-1, -1}, {1, -1}, {-2, -2}, {2, -2}}},
+    [FORMATION_THREE_WALL] = {.min_tile = 0,
+                              .max_tile = SCREEN_TILES - 3,
+                              .count = 3,
+                              .offsets = {{0, 0}, {1, 0}, {2, 0}}},
+    [FORMATION_FOUR_WALL] = {.min_tile = 0,
+                             .max_tile = SCREEN_TILES - 4,
+                             .count = 4,
+                             .offsets = {{0, 0}, {1, 0}, {2, 0}, {3, 0}}},
+};
+
+// max colors for particle palettes
+#define MAX_COLORS 8
+
+// base values for particle templates
+typedef struct {
+  i8 lifetime;
+  i8 speed;
+  u8 colorCount;
+  i16 shrink;
+  i16 scale; // fixed point
+  Color (*colorPalette)[MAX_COLORS];
+} Particle;
+
+typedef enum {
+  PARTICLE_EXHAUST,
+} ParticleType;
+
+Color exhaustPalette[MAX_COLORS] = {
+    GRAY,
+    ORANGE,
+    YELLOW,
+    WHITE,
+};
+
+const Particle PARTICLES[] = {
+    [PARTICLE_EXHAUST] = {.scale = TO_FIXED(2.5),
+                          .shrink = TO_FIXED(0.1),
+                          .lifetime = 16,
+                          .colorCount = 4,
+                          .colorPalette = &exhaustPalette},
 };
 
 void shipUpdate(State *state, u16 id);
 void spawnerUpdate(State *state);
-void onBulletHitAlien(State* state, u16 bulletId, u16 alienId);
+void onBulletHitAlien(State *state, u16 bulletId, u16 alienId);
 
 int main(void) {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
@@ -61,22 +91,38 @@ int main(void) {
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
-  u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
-                                    .subX = TO_FIXED(64),
-                                    .subY = TO_FIXED(64),
-                                    .scaleX = 1,
-                                    .scaleY = 1,
-                                    .spriteId = 0,
-                                    .mask = {.width = 8, .height = 8}});
+  u16 ship_id = add(&state, (Thing){
+      .kind = SHIPKIND,
+    .subX = TO_FIXED(64),
+    .subY = TO_FIXED(64),
+    .scaleX = TO_FIXED(1),
+    .scaleY = TO_FIXED(1),
+    .spriteId = 0,
+    .mask = {.width = 8, .height = 8}});
 
   while (!WindowShouldClose()) {
     for (u16 i = state.activeCount; i-- > 0;) {
       u16 id = state.activeIds[i];
       Thing *t = &state.things[id];
 
+      if (t->kind == PARTICLEKIND) {
+        // alarm[1] is used for lifetime.
+        if (t->alarms[1] == 0) {
+          rem(&state, id);
+          continue;
+        }
+
+        // for particles, the parentId field is repurposed for the particle type indicator
+        Particle template = PARTICLES[t->parentId];
+        if (template.shrink != 0) {
+          t->scaleX -= template.shrink;
+          t->scaleY -= template.shrink;
+        }
+      }
+
       if (t->kind == ALIENKIND) {
-		t->subY += TO_FIXED(0.25);
-	  }
+        t->subY += TO_FIXED(0.25);
+      }
 
       if (t->kind == BULLETKIND) {
         float rad = (float)t->rotation * (PI / 180.0f);
@@ -90,8 +136,7 @@ int main(void) {
         }
       }
 
-      t->alarms[0]++; // increment alarm[0] for animations decrement every other
-                      // alarm.
+      t->alarms[0]++; // increment alarm[0] for animations decrement every other alarm.
       for (i16 j = 1; j < MAX_ALARMS; ++j) {
         if (t->alarms[j] > 0)
           t->alarms[j]--;
@@ -99,8 +144,8 @@ int main(void) {
     }
 
     shipUpdate(&state, ship_id);
-	spawnerUpdate(&state);
-	checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
+    spawnerUpdate(&state);
+    checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
 
     BeginTextureMode(renderTexture);
     ClearBackground(BLACK);
@@ -118,10 +163,10 @@ int main(void) {
         continue;
       }
 
-      draw(&spritesheet, &state.things[id]);
+      drawThing(&spritesheet, &state.things[id]);
     }
 
-    //drawDebugMasks(&state);
+    // drawDebugMasks(&state);
     EndTextureMode();
 
     BeginDrawing();
@@ -158,8 +203,8 @@ void shipUpdate(State *state, u16 id) {
                    .subX = ship->subX,
                    .subY = ship->subY,
                    .rotation = 270,
-                   .scaleX = 1,
-                   .scaleY = 1,
+                   .scaleX = TO_FIXED(1),
+                   .scaleY = TO_FIXED(1),
                    .mask = {.width = 8, .height = 8},
                });
   }
@@ -179,36 +224,35 @@ void shipUpdate(State *state, u16 id) {
 #define SECONDS(n) (n * ((i16)60))
 
 // [min, max)
-i16 randomRange_i16(i16 min, i16 max) {
-	return (rand() % (max - min)) + min;
-}
+i16 randomRange_i16(i16 min, i16 max) { return (rand() % (max - min)) + min; }
 
 void spawnerUpdate(State *state) {
-	state->spawnerCounter++;
+  state->spawnerCounter++;
 
-	if (state->spawnerCounter >= SECONDS(3)) {
-		state->spawnerCounter = 0;
+  if (state->spawnerCounter >= SECONDS(3)) {
+    state->spawnerCounter = 0;
 
-		Formation chosenFormation = FORMATIONS[randomRange_i16(0, FORMATION_COUNT)];
-		i16 baseTile = randomRange_i16(chosenFormation.min_tile, chosenFormation.max_tile + 1);
+    Formation chosenFormation = FORMATIONS[randomRange_i16(0, FORMATION_COUNT)];
+    i16 baseTile =
+        randomRange_i16(chosenFormation.min_tile, chosenFormation.max_tile + 1);
 
-		for (i16 i = 0; i < chosenFormation.count; ++i) {
-			Vector2Short offset = chosenFormation.offsets[i];
-			i16 tileX = baseTile + offset.x;
-			i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
-			add(state, (Thing){
-				.kind = ALIENKIND,
-				.subX = TO_FIXED(tileX * TILE_SIZE + HALF_TILE_SIZE),
-				.subY = TO_FIXED(posY),
-				.mask = {.width = 6, .height = 6},
-				.scaleX = 1,
-				.scaleY = 1,
-			});
-		}
-	}
+    for (i16 i = 0; i < chosenFormation.count; ++i) {
+      Vector2Short offset = chosenFormation.offsets[i];
+      i16 tileX = baseTile + offset.x;
+      i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
+      add(state, (Thing){
+                     .kind = ALIENKIND,
+                     .subX = TO_FIXED(tileX * TILE_SIZE + HALF_TILE_SIZE),
+                     .subY = TO_FIXED(posY),
+                     .mask = {.width = 6, .height = 6},
+                     .scaleX = TO_FIXED(1),
+                     .scaleY = TO_FIXED(1),
+                 });
+    }
+  }
 }
 
-void onBulletHitAlien(State* state, u16 bulletId, u16 alienId) {
-	rem(state, bulletId);
-	rem(state, alienId);
+void onBulletHitAlien(State *state, u16 bulletId, u16 alienId) {
+  rem(state, bulletId);
+  rem(state, alienId);
 }
