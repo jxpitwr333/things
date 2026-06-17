@@ -40,11 +40,6 @@ typedef enum {
 } Kind;
 
 typedef struct {
-} ShipTrait;
-typedef struct {
-} AlienTrait;
-
-typedef struct {
   i8 width;
   i8 height;
 } Mask;
@@ -105,10 +100,15 @@ void kindUnlink(State *state, u16 id);
 bool checkOBB(Thing *t1, Thing *t2);
 void drawThingMask(Thing *thing, Color color);
 void drawDebugMasks(State *state);
-void checkCollisions(State *state, Kind k1, Kind k2, CollisionCallback onCollide);
+void checkCollisions(State *state, Kind k1, Kind k2,
+                     CollisionCallback onCollide);
 
-static inline int clamp(int value, int min, int max) { return (value > max ? max : (value < min ? min : value)); }
-static inline float fclamp(float value, float min, float max) { return (value > max ? max : (value < min ? min : value)); }
+static inline int clamp(int value, int min, int max) {
+  return (value > max ? max : (value < min ? min : value));
+}
+static inline float fclamp(float value, float min, float max) {
+  return (value > max ? max : (value < min ? min : value));
+}
 int randomRange(int min, int max);
 
 #endif

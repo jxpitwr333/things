@@ -1,5 +1,6 @@
 /*
- * TODO: standardize thing stats in templates, otherwise i have to keep chasing values around everytime i do a rewrite.
+ * TODO: standardize thing stats in templates, otherwise i have to keep chasing
+ * values around everytime i do a rewrite.
  * TODO: draw order
  */
 
@@ -14,6 +15,7 @@
 #define SCREEN_TILES 16
 #define MAX_FORMATION_OFFSETS 8
 #define SECONDS(n) (n * ((i16)60))
+#define RAW_TO_COLOR(ptr) ((Color){(ptr)[0], (ptr)[1], (ptr)[2], (ptr)[3]})
 
 typedef enum {
   FORMATION_V,
@@ -58,21 +60,21 @@ typedef struct {
   u8 colorCount;
   i16 shrink;
   i16 scale; // fixed point
-  Color (*colorPalette)[MAX_COLORS];
+  const u8 (*colorPalette)[MAX_COLORS][4];
 } Particle;
 
 typedef enum {
   PARTICLE_EXHAUST,
 } ParticleType;
 
-Color exhaustPalette[MAX_COLORS] = {
-    GRAY,
-    ORANGE,
-    YELLOW,
-    WHITE,
+const u8 exhaustPalette[MAX_COLORS][4] = {
+    {130, 130, 130, 255},
+    {255, 161, 0, 255},
+    {253, 249, 0, 255},
+    {255, 255, 255, 255},
 };
 
-const Particle PARTICLES[] = {
+Particle PARTICLES[] = {
     [PARTICLE_EXHAUST] = {.scale = TO_FIXED(2.5),
                           .shrink = TO_FIXED(0.1),
                           .lifetime = 16,
@@ -94,14 +96,13 @@ int main(void) {
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
-  u16 ship_id = add(&state, (Thing){
-    .kind = SHIPKIND,
-    .subX = TO_FIXED(64),
-    .subY = TO_FIXED(64),
-    .scaleX = TO_FIXED(1),
-    .scaleY = TO_FIXED(1),
-    .spriteId = 0,
-    .mask = {.width = 8, .height = 8}});
+  u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
+                                    .subX = TO_FIXED(64),
+                                    .subY = TO_FIXED(64),
+                                    .scaleX = TO_FIXED(1),
+                                    .scaleY = TO_FIXED(1),
+                                    .spriteId = 0,
+                                    .mask = {.width = 8, .height = 8}});
 
   while (!WindowShouldClose()) {
     for (u16 i = state.activeCount; i-- > 0;) {
@@ -115,12 +116,13 @@ int main(void) {
           continue;
         }
 
-        // for particles, the parentId field is repurposed for the particle type indicator
+        // for particles, the parentId field is repurposed for the particle type
+        // indicator
         Particle template = PARTICLES[t->parentId];
         if (template.shrink != 0) {
           t->scaleX -= template.shrink;
           t->scaleY -= template.shrink;
-		}
+        }
       }
 
       if (t->kind == ALIENKIND) {
@@ -139,7 +141,8 @@ int main(void) {
         }
       }
 
-      t->alarms[0]++; // increment alarm[0] for animations decrement every other alarm.
+      t->alarms[0]++; // increment alarm[0] for animations decrement every other
+                      // alarm.
       for (i16 j = 1; j < MAX_ALARMS; ++j) {
         if (t->alarms[j] > 0)
           t->alarms[j]--;
@@ -153,44 +156,52 @@ int main(void) {
     BeginTextureMode(renderTexture);
     ClearBackground(BLACK);
 
-	char buffer[32];
-	snprintf(buffer, sizeof(buffer), "things: %d", state.activeCount);
-	DrawText(buffer, 20, 20, 8, GREEN);
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "things: %d", state.activeCount);
+    DrawText(buffer, 20, 20, 8, GREEN);
 
     for (u16 i = 0; i < state.activeCount; ++i) {
       u16 id = state.activeIds[i];
-	  Thing* thing = &state.things[id];
+      Thing *thing = &state.things[id];
 
-	  switch (thing->kind) {
-		case PARTICLEKIND:
-			Particle template = PARTICLES[thing->parentId];
-			if (template.colorCount != 0) {
-				if (template.colorCount == 1) {
-					DrawEllipse((int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY), TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY), *template.colorPalette[0]);
-				} else {
-					float percentage = (float)thing->alarms[1] / (float)template.lifetime;
-					int idx = (int)floorf(percentage * (float)template.colorCount);
-					Color color = (*template.colorPalette)[clamp(idx, 0, template.colorCount - 1)];
-					DrawEllipse((int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY), TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY), color);
-				}
-			}
-		break;
+      switch (thing->kind) {
+      case PARTICLEKIND: {
+        Particle template = PARTICLES[thing->parentId];
+        if (template.colorCount != 0) {
+          const u8(*palette)[4] = *template.colorPalette;
+          if (template.colorCount == 1) {
+            DrawEllipse((int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY),
+                        TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY),
+                        RAW_TO_COLOR(palette[0]));
+          } else {
+            float percentage =
+                (float)thing->alarms[1] / (float)template.lifetime;
+            int idx = (int)floorf(percentage * (float)template.colorCount);
 
-		case BULLETKIND:
-			drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
-		break;
+            DrawEllipse(
+                (int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY),
+                TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY),
+                RAW_TO_COLOR(palette[clamp(idx, 0, template.colorCount - 1)]));
+          }
+        }
+        break;
+      }
 
-		case ALIENKIND:
-			drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_GREEN]);
-		break;
+      case BULLETKIND:
+        drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
+        break;
 
-		default:
-			drawThing(&spritesheet, thing);
-		break;
-	  }
+      case ALIENKIND:
+        drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_GREEN]);
+        break;
+
+      default:
+        drawThing(&spritesheet, thing);
+        break;
+      }
     }
 
-    //drawDebugMasks(&state);
+    // drawDebugMasks(&state);
     EndTextureMode();
 
     BeginDrawing();
@@ -242,23 +253,23 @@ void shipUpdate(State *state, u16 id) {
   }
 
   if (moveX != 0 || moveY != 0) {
-	i16 scale = PARTICLES[PARTICLE_EXHAUST].scale;
-	add(state, (Thing){
-		.kind = PARTICLEKIND,
-		.parentId = PARTICLE_EXHAUST,
-		.subX = ship->subX + TO_FIXED(randomRange(-2, 2)),
-		.subY = ship->subY + TO_FIXED(randomRange(-2, 2)),
-		.scaleX = scale,
-		.scaleY = scale,
-		.alarms = { [1] = PARTICLES[PARTICLE_EXHAUST].lifetime }
-	});
+    i16 scale = PARTICLES[PARTICLE_EXHAUST].scale;
+    add(state, (Thing){.kind = PARTICLEKIND,
+                       .parentId = PARTICLE_EXHAUST,
+                       .subX = ship->subX + TO_FIXED(randomRange(-2, 2)),
+                       .subY = ship->subY + TO_FIXED(randomRange(-2, 2)),
+                       .scaleX = scale,
+                       .scaleY = scale,
+                       .alarms = {[1] = PARTICLES[PARTICLE_EXHAUST].lifetime}});
   }
 
   ship->subX += TO_FIXED(SHIP_SPD * moveX);
   ship->subY += TO_FIXED(SHIP_SPD * moveY);
 
-  ship->subX = TO_FIXED(fclamp(TO_FLOAT(ship->subX), (float)HALF_TILE_SIZE, (float)(GAME_WIDTH - HALF_TILE_SIZE)));
-  ship->subY = TO_FIXED(fclamp(TO_FLOAT(ship->subY), (float)HALF_TILE_SIZE, (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
+  ship->subX = TO_FIXED(fclamp(TO_FLOAT(ship->subX), (float)HALF_TILE_SIZE,
+                               (float)(GAME_WIDTH - HALF_TILE_SIZE)));
+  ship->subY = TO_FIXED(fclamp(TO_FLOAT(ship->subY), (float)HALF_TILE_SIZE,
+                               (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
 }
 
 void spawnerUpdate(State *state) {
