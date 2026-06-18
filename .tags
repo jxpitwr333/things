@@ -113,6 +113,7 @@ PARTICLES	src/main.c	/^Particle PARTICLES[] = {$/;"	v	typeref:typename:Particle[
 PARTICLE_EXHAUST	src/main.c	/^  PARTICLE_EXHAUST,$/;"	e	enum:__anon6a96e1720503	file:
 Particle	src/main.c	/^} Particle;$/;"	t	typeref:struct:__anon6a96e1720408	file:
 ParticleType	src/main.c	/^} ParticleType;$/;"	t	typeref:enum:__anon6a96e1720503	file:
+RAW_TO_COLOR	src/main.c	/^#define RAW_TO_COLOR(/;"	d	file:
 RM	Makefile	/^    RM = rm -rf$/;"	m
 RM	Makefile	/^    RM = rmdir \/s \/q$/;"	m
 RUN_CMD	Makefile	/^    RUN_CMD = $(TARGET)$/;"	m
@@ -159,7 +160,7 @@ checkOBB	src/things.c	/^bool checkOBB(Thing *t1, Thing *t2) {$/;"	f	typeref:type
 clamp	src/things.h	/^static inline int clamp(int value, int min, int max) {$/;"	f	typeref:typename:int
 clean	Makefile	/^clean:$/;"	t
 colorCount	src/main.c	/^  u8 colorCount;$/;"	m	struct:__anon6a96e1720408	typeref:typename:u8	file:
-colorPalette	src/main.c	/^  Color (*colorPalette)[MAX_COLORS];$/;"	m	struct:__anon6a96e1720408	typeref:typename:Color (*)[]	file:
+colorPalette	src/main.c	/^  const u8 (*colorPalette)[MAX_COLORS][4];$/;"	m	struct:__anon6a96e1720408	typeref:typename:const u8 (*)[]	file:
 count	src/main.c	/^  u8 count;$/;"	m	struct:__anon6a96e1720308	typeref:typename:u8	file:
 denseId	src/things.h	/^  u16 denseId;$/;"	m	struct:__anonfc990d5f0308	typeref:typename:u16
 drawAnim	src/things.c	/^void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {$/;"	f	typeref:typename:void
@@ -167,7 +168,7 @@ drawDebugMasks	src/things.c	/^void drawDebugMasks(State *state) {$/;"	f	typeref:
 drawSprite	src/things.c	/^static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY, i16 scaleX, i16/;"	f	typeref:typename:void	file:
 drawThing	src/things.c	/^void drawThing(Texture2D* spritesheet, Thing* thing) {$/;"	f	typeref:typename:void
 drawThingMask	src/things.c	/^void drawThingMask(Thing *thing, Color color) {$/;"	f	typeref:typename:void
-exhaustPalette	src/main.c	/^Color exhaustPalette[MAX_COLORS] = {$/;"	v	typeref:typename:Color[]
+exhaustPalette	src/main.c	/^const u8 exhaustPalette[MAX_COLORS][4] = {$/;"	v	typeref:typename:const u8[][4]
 fclamp	src/things.h	/^static inline float fclamp(float value, float min, float max) {$/;"	f	typeref:typename:float
 firstChildId	src/things.h	/^  u16 firstChildId;$/;"	m	struct:__anonfc990d5f0308	typeref:typename:u16
 frames	src/things.h	/^  i8 frames[MAX_FRAMES];$/;"	m	struct:__anonfc990d5f0608	typeref:typename:i8[]

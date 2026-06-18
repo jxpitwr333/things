@@ -16,6 +16,8 @@
 #define MAX_FORMATION_OFFSETS 8
 #define SECONDS(n) (n * ((i16)60))
 #define RAW_TO_COLOR(ptr) ((Color){(ptr)[0], (ptr)[1], (ptr)[2], (ptr)[3]})
+#define ALIEN_ROTATION_SPD 5.0f
+#define ALIEN_ROTATION_AMPLITUDE 15.0f
 
 typedef enum {
   FORMATION_V,
@@ -126,6 +128,8 @@ int main(void) {
       }
 
       if (t->kind == ALIENKIND) {
+        t->rotation = (i16)(sinf(GetTime() * ALIEN_ROTATION_SPD) *
+                            ALIEN_ROTATION_AMPLITUDE);
         t->subY += TO_FIXED(0.25);
       }
 
