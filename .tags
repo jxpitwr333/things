@@ -71,6 +71,8 @@ $(BUILD_DIR)/%.o	Makefile	/^$(BUILD_DIR)\/%.o: $(SRC_DIR)\/%.c$/;"	t
 $(TARGET)	Makefile	/^$(TARGET): $(OBJS)$/;"	t
 ABS	src/things.h	/^#define ABS(/;"	d
 ALIENKIND	src/things.h	/^  ALIENKIND,$/;"	e	enum:__anonfc990d5f0103
+ALIEN_ROTATION_AMPLITUDE	src/main.c	/^#define ALIEN_ROTATION_AMPLITUDE /;"	d	file:
+ALIEN_ROTATION_SPD	src/main.c	/^#define ALIEN_ROTATION_SPD /;"	d	file:
 ANIMATIONS	src/things.c	/^const Animation ANIMATIONS[] = {$/;"	v	typeref:typename:const Animation[]
 ANIM_BULLET	src/things.h	/^typedef enum { ANIM_GREEN, ANIM_BULLET } AnimNames;$/;"	e	enum:__anonfc990d5f0503
 ANIM_GREEN	src/things.h	/^typedef enum { ANIM_GREEN, ANIM_BULLET } AnimNames;$/;"	e	enum:__anonfc990d5f0503
@@ -92,11 +94,12 @@ FormationType	src/main.c	/^} FormationType;$/;"	t	typeref:enum:__anon6a96e172010
 GAME_HEIGHT	src/things.h	/^#define GAME_HEIGHT /;"	d
 GAME_WIDTH	src/things.h	/^#define GAME_WIDTH /;"	d
 HALF_TILE_SIZE	src/things.h	/^#define HALF_TILE_SIZE /;"	d
-INCLUDES	Makefile	/^INCLUDES = -I\/usr\/local\/include$/;"	m
+INCLUDES	Makefile	/^    INCLUDES = -Isrc -I$(RAYLIB_PATH)$/;"	m
+INCLUDES	Makefile	/^    INCLUDES = -Isrc -I$(RAYLIB_PATH)\/include$/;"	m
 KIND_AMOUNT	src/things.h	/^  KIND_AMOUNT,$/;"	e	enum:__anonfc990d5f0103
 Kind	src/things.h	/^} Kind;$/;"	t	typeref:enum:__anonfc990d5f0103
-LIBS	Makefile	/^    LIBS = -L\/usr\/local\/lib -lraylib -lm -lpthread -ldl -lrt -lX11$/;"	m
-LIBS	Makefile	/^    LIBS = -L\/usr\/local\/lib -lraylib -lopengl32 -lgdi32 -lwinmm$/;"	m
+LIBS	Makefile	/^    LIBS = -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm$/;"	m
+LIBS	Makefile	/^    LIBS = -L$(RAYLIB_PATH)\/lib -lraylib -lm -lpthread -ldl -lrt -lX11$/;"	m
 MAX_ALARMS	src/things.h	/^#define MAX_ALARMS /;"	d
 MAX_COLORS	src/main.c	/^#define MAX_COLORS /;"	d	file:
 MAX_FORMATION_OFFSETS	src/main.c	/^#define MAX_FORMATION_OFFSETS /;"	d	file:
@@ -114,8 +117,10 @@ PARTICLE_EXHAUST	src/main.c	/^  PARTICLE_EXHAUST,$/;"	e	enum:__anon6a96e1720503	
 Particle	src/main.c	/^} Particle;$/;"	t	typeref:struct:__anon6a96e1720408	file:
 ParticleType	src/main.c	/^} ParticleType;$/;"	t	typeref:enum:__anon6a96e1720503	file:
 RAW_TO_COLOR	src/main.c	/^#define RAW_TO_COLOR(/;"	d	file:
+RAYLIB_PATH	Makefile	/^    RAYLIB_PATH = C:\/raylib\/raylib\/src$/;"	m
+RAYLIB_PATH	Makefile	/^RAYLIB_PATH ?= \/usr\/local$/;"	m
+RM	Makefile	/^    RM = del \/q \/f$/;"	m
 RM	Makefile	/^    RM = rm -rf$/;"	m
-RM	Makefile	/^    RM = rmdir \/s \/q$/;"	m
 RUN_CMD	Makefile	/^    RUN_CMD = $(TARGET)$/;"	m
 RUN_CMD	Makefile	/^    RUN_CMD = .\/$(TARGET)$/;"	m
 SCREEN_TILES	src/main.c	/^#define SCREEN_TILES /;"	d	file:
@@ -128,9 +133,10 @@ SRCS	Makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
 SRC_DIR	Makefile	/^SRC_DIR = src$/;"	m
 SUB_POSITION	src/things.h	/^#define SUB_POSITION /;"	d
 State	src/things.h	/^} State;$/;"	t	typeref:struct:__anonfc990d5f0408
-TARGET	Makefile	/^TARGET = $(BUILD_DIR)\/game$(TARGET_EXT)$/;"	m
+TARGET	Makefile	/^TARGET = $(BUILD_DIR)\/$(TARGET_NAME)$(TARGET_EXT)$/;"	m
 TARGET_EXT	Makefile	/^    TARGET_EXT = .exe$/;"	m
 TARGET_EXT	Makefile	/^    TARGET_EXT =$/;"	m
+TARGET_NAME	Makefile	/^TARGET_NAME = game$/;"	m
 THINGS_H	src/things.h	/^#define THINGS_H$/;"	d
 TILE_SIZE	src/things.h	/^#define TILE_SIZE /;"	d
 TO_FIXED	src/things.h	/^#define TO_FIXED(/;"	d

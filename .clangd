@@ -4,3 +4,8 @@ Diagnostics:
     - unknown_typename
     - expected_semi_after_decl
   UnusedIncludes: Strict
+CompileFlags:
+  Add: [
+    "-IC:/raylib/raylib/src",
+    "-IC:/raylib/w64devkit/x86_64-w64-mingw32/include"
+  ]

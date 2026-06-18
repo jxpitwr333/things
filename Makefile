@@ -1,6 +1,42 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -Werror -std=c99 -O2
-INCLUDES = -I/usr/local/include
+TARGET_NAME = game
+
+# --- Configuration Paths (Can be overridden by user) ---
+# Default search paths if not specified on command line or environment
+RAYLIB_PATH ?= /usr/local
+
+# Platform detection
+ifeq ($(OS),Windows_NT)
+    # Default Raylib path for w64devkit installer on Windows
+    RAYLIB_PATH = C:/raylib/raylib/src
+    
+    # Include paths
+    INCLUDES = -Isrc -I$(RAYLIB_PATH)
+    
+    # If using w64devkit, libs might be right in raylib path or system paths
+    LIBS = -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm
+    
+    RM = del /q /f
+    MKDIR = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
+    TARGET_EXT = .exe
+    RUN_CMD = $(TARGET)
+else
+    INCLUDES = -Isrc -I$(RAYLIB_PATH)/include
+    LIBS = -L$(RAYLIB_PATH)/lib -lraylib -lm -lpthread -ldl -lrt -lX11
+    RM = rm -rf
+    MKDIR = mkdir -p $(BUILD_DIR)
+    TARGET_EXT =
+    RUN_CMD = ./$(TARGET)
+endif
+
+# --- Directories and Targets ---
+SRC_DIR = src
+BUILD_DIR = build
+TARGET = $(BUILD_DIR)/$(TARGET_NAME)$(TARGET_EXT)
+
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # Uncomment to enable profiling
 # PROFILE = 1
@@ -8,28 +44,6 @@ INCLUDES = -I/usr/local/include
 ifdef PROFILE
     CFLAGS += -g -fno-omit-frame-pointer
 endif
-
-# Platform detection
-ifeq ($(OS),Windows_NT)
-    LIBS = -L/usr/local/lib -lraylib -lopengl32 -lgdi32 -lwinmm
-    RM = rmdir /s /q
-    MKDIR = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
-    TARGET_EXT = .exe
-    RUN_CMD = $(TARGET)
-else
-    LIBS = -L/usr/local/lib -lraylib -lm -lpthread -ldl -lrt -lX11
-    RM = rm -rf
-    MKDIR = mkdir -p $(BUILD_DIR)
-    TARGET_EXT =
-    RUN_CMD = ./$(TARGET)
-endif
-
-SRC_DIR = src
-BUILD_DIR = build
-TARGET = $(BUILD_DIR)/game$(TARGET_EXT)
-
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 all: $(BUILD_DIR) $(TARGET)
 
@@ -43,7 +57,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	$(RM) $(OBJS) $(TARGET)
 
 run: $(TARGET)
 	$(RUN_CMD)
