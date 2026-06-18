@@ -27,7 +27,7 @@ else
     RM = rm -rf
     MKDIR = mkdir -p $(BUILD_DIR)
     TARGET_EXT =
-    RUN_CMD = ./$(TARGET)
+    RUN_CMD = LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(TARGET)
 endif
 
 # --- Directories and Targets ---
