@@ -40,8 +40,7 @@ typedef enum {
 } Kind;
 
 typedef struct {
-  i8 width;
-  i8 height;
+  i8 width, height;
 } Mask;
 
 typedef struct {
@@ -69,19 +68,19 @@ typedef struct {
 typedef struct {
   Thing *things;
   u16 *activeIds;
+  Texture *spritesheet;
+  u16 kindHeads[KIND_AMOUNT];
   u16 activeCount;
   u16 nextEmptySlot;
-  Texture *spritesheet;
   i16 spawnerCounter;
-  u16 kindHeads[KIND_AMOUNT];
 } State;
 
 typedef enum { ANIM_GREEN, ANIM_BULLET } AnimNames;
 
 typedef struct {
-  bool loops;
-  i8 frames[MAX_FRAMES];
-  i8 ticksPerFrame;
+	bool loops;
+	i8 ticksPerFrame;
+	i8 frames[MAX_FRAMES];
 } Animation;
 
 extern const Animation ANIMATIONS[];

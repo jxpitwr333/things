@@ -31,10 +31,10 @@ typedef struct {
 } Vector2Short;
 
 typedef struct {
-  u8 count;
-  i16 min_tile;
-  i16 max_tile;
-  Vector2Short offsets[MAX_FORMATION_OFFSETS];
+	i16 min_tile;
+	i16 max_tile;
+	Vector2Short offsets[MAX_FORMATION_OFFSETS];
+	u8 count;
 } Formation;
 
 const Formation FORMATIONS[] = {
@@ -57,16 +57,17 @@ const Formation FORMATIONS[] = {
 
 // base values for particle templates
 typedef struct {
-  i8 lifetime;
-  i8 speed;
-  u8 colorCount;
-  i16 shrink;
-  i16 scale; // fixed point
-  const u8 (*colorPalette)[MAX_COLORS][4];
+	const u8 (*colorPalette)[MAX_COLORS][4];
+	i16 shrink;
+	i16 scale; // fixed point
+	i8 lifetime;
+	i8 speed;
+	u8 colorCount;
 } Particle;
 
 typedef enum {
   PARTICLE_EXHAUST,
+  PARTICLE_EXPLOSION,
 } ParticleType;
 
 const u8 exhaustPalette[MAX_COLORS][4] = {
