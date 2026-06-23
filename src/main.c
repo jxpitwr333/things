@@ -4,9 +4,9 @@
  * TODO: draw order
  */
 
+#include <raylib.h>
 #include "things.h"
 #include <math.h>
-#include <raylib.h>
 #include <stdio.h>
 
 #define SHIP_SPD 2
@@ -14,7 +14,7 @@
 #define SCREEN_TILES 16
 #define MAX_FORMATION_OFFSETS 8
 #define SECONDS(n) (n * ((i16)60))
-#define RAW_TO_COLOR(ptr) ((Color){(ptr)[0], (ptr)[1], (ptr)[2], (ptr)[3]})
+
 #define ALIEN_ROTATION_SPD 5.0f
 #define ALIEN_ROTATION_AMPLITUDE 15.0f
 
@@ -56,9 +56,9 @@ const Formation FORMATIONS[] = {
 
 // base values for particle templates
 typedef struct {
-	const u8 (*colorPalette)[MAX_COLORS][4];
-	i8 shrink; // 4.4
-	i8 scale; // 4.4
+	i32* colorPalette;
+	i8 shrink;
+	i8 scale;
 	i8 lifetime;
 	i8 speed;
 	u8 colorCount;
@@ -69,11 +69,11 @@ typedef enum {
   PARTICLE_EXPLOSION,
 } ParticleType;
 
-const u8 exhaustPalette[MAX_COLORS][4] = {
-    {130, 130, 130, 255},
-    {255, 161, 0, 255},
-    {253, 249, 0, 255},
-    {255, 255, 255, 255},
+i32 exhaustPalette[MAX_COLORS] = {
+	GREY_HEX,
+	ORANGE_HEX,
+	YELLOW_HEX,
+	WHITE_HEX,
 };
 
 Particle PARTICLES[] = {
@@ -81,7 +81,7 @@ Particle PARTICLES[] = {
                           .shrink = TO_FIXED_8(0.1),
                           .lifetime = 16,
                           .colorCount = 4,
-                          .colorPalette = &exhaustPalette},
+                          .colorPalette = exhaustPalette},
 };
 
 void shipUpdate(State *state, u16 id);
@@ -162,7 +162,7 @@ int main(void) {
 
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "things: %d", state.activeCount);
-    DrawText(buffer, 20, 20, 8, GREEN);
+    DrawText(buffer, 20, 20, 8, hex2Color(GREEN_HEX));
 
     for (u16 i = 0; i < state.activeCount; ++i) {
       u16 id = state.activeIds[i];
@@ -172,11 +172,11 @@ int main(void) {
       case PARTICLEKIND: {
         Particle template = PARTICLES[thing->parentId];
         if (template.colorCount != 0) {
-          const u8(*palette)[4] = *template.colorPalette;
+          i32* palette = template.colorPalette;
           if (template.colorCount == 1) {
             DrawEllipse((int)TO_FLOAT_16(thing->subX), (int)TO_FLOAT_16(thing->subY),
                         TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
-                        RAW_TO_COLOR(palette[0]));
+                        hex2Color(palette[0]));
           } else {
             float percentage =
                 (float)thing->alarms[1] / (float)template.lifetime;
@@ -185,7 +185,7 @@ int main(void) {
             DrawEllipse(
                 (int)TO_FLOAT_16(thing->subX), (int)TO_FLOAT_16(thing->subY),
                 TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
-                RAW_TO_COLOR(palette[clamp(idx, 0, template.colorCount - 1)]));
+                hex2Color(palette[clamp(idx, 0, template.colorCount - 1)]));
           }
         }
         break;

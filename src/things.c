@@ -258,10 +258,12 @@ void drawThingMask(Thing *thing, Color color) {
 }
 
 void drawDebugMasks(State *state) {
-  Color kind_colors[KIND_AMOUNT] = {[NILKIND] = BLANK,
-                                    [SHIPKIND] = GREEN,
-                                    [ALIENKIND] = RED,
-                                    [BULLETKIND] = YELLOW};
+  	Color kind_colors[KIND_AMOUNT] = {
+		[NILKIND] = BLANK,
+		[SHIPKIND] = hex2Color(GREEN_HEX),
+		[ALIENKIND] = hex2Color(RED_HEX),
+		[BULLETKIND] = hex2Color(YELLOW_HEX)
+	};
 
   for (int k = 1; k < KIND_AMOUNT; k++) {
     u16 head = state->kindHeads[k];

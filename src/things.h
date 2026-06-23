@@ -8,6 +8,7 @@ typedef uint16_t u16;
 typedef int16_t i16;
 typedef int8_t i8;
 typedef uint8_t u8;
+typedef int32_t i32;
 
 #define MAX_THINGS ((u16)4096)
 #define NIL ((u16)0)
@@ -36,6 +37,22 @@ typedef uint8_t u8;
 #define BRAD2DEG(theta) ((float)(theta) * (360.0f / 256.0f))
 #define RAD2BRAD(theta) ((u8)((float)(theta) * (256.0f / (2.0f * PI))))
 #define BRAD2RAD(theta) ((float)(theta) * ((2.0f * PI) / 256.0f))
+
+#define BLUE_HEX		0x1D2B53
+#define MAROON_HEX		0x7E2553
+#define GREEN_HEX		0x008751
+#define BROWN_HEX		0xAB5236
+#define DARK_GREY_HEX 	0x5F574F
+#define LIGHT_GREY_HEX 	0xC2C3C7
+#define WHITE_HEX		0xFFF1E8
+#define RED_HEX			0xFF004D
+#define ORANGE_HEX		0xFFA300
+#define YELLOW_HEX		0xFFEC27
+#define LIME_HEX		0x00E436
+#define SKYBLUE_HEX 	0x29ADFF
+#define GREY_HEX		0x83769C
+#define PINK_HEX		0xFF77A8
+#define PEACH_HEX		0xFFCCAA
 
 typedef enum {
   NILKIND,
@@ -114,5 +131,14 @@ static inline float fclamp(float value, float min, float max) {
   return (value > max ? max : (value < min ? min : value));
 }
 int randomRange(int min, int max);
+
+static inline Color hex2Color(i32 hex) {
+    return (Color){
+        .r = (u8)((hex >> 16) & 0xFF),
+        .g = (u8)((hex >> 8)  & 0xFF),
+        .b = (u8)(hex         & 0xFF),
+        .a = 255                      
+    };
+}
 
 #endif
