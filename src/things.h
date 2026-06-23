@@ -25,10 +25,17 @@ typedef uint8_t u8;
 #define SHEET_COLUMNS ((u16)11)
 #define SHEET_ROWS ((u16)2)
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-#define SUB_POSITION ((float)256.0f)
-#define TO_FIXED(f) ((i16)((f) * SUB_POSITION))
-#define TO_FLOAT(fx) ((float)(fx) / SUB_POSITION)
+#define SCALE_16 ((float)256.0f)
+#define SCALE_8 ((float)16.0f)
+#define TO_FIXED_16(f) ((i16)((f) * SCALE_16))
+#define TO_FLOAT_16(fx) ((float)(fx) / SCALE_16)
+#define TO_FIXED_8(f) ((i8)((f) * SCALE_8))
+#define TO_FLOAT_8(fx) ((float)(fx) / SCALE_8)
+
+#define DEG2BRAD(theta) ((u8)((float)(theta) * (256.0f / 360.0f)))
+#define BRAD2DEG(theta) ((float)(theta) * (360.0f / 256.0f))
+#define RAD2BRAD(theta) ((u8)((float)(theta) * (256.0f / (2.0f * PI))))
+#define BRAD2RAD(theta) ((float)(theta) * ((2.0f * PI) / 256.0f))
 
 typedef enum {
   NILKIND,
@@ -44,32 +51,28 @@ typedef struct {
 } Mask;
 
 typedef struct {
-  u16 id;
-  u16 denseId;
-
-  u8 kind;
-  i8 spriteId;
-
-  i16 subX;
-  i16 subY;
-  i16 scaleX;
-  i16 scaleY;
-  i16 rotation;
-  Mask mask;
-
-  i16 alarms[MAX_ALARMS]; // alarm[0] is reserved for ticking the thing's
-                          // animation.
-  u16 parentId;
-  u16 firstChildId;
-  u16 nextSibId;
-  u16 prevSibId;
+	i16 alarms[MAX_ALARMS]; // alarm[0] is reserved for ticking the thing's animation.
+	u16 id;
+	u16 denseId;
+	i16 subX;
+	i16 subY;
+	u16 parentId;
+	u16 firstChildId;
+	u16 nextSibId;
+	u16 prevSibId;
+	Mask mask;
+	i8 scaleX;
+	i8 scaleY;
+	u8 rotation;
+	u8 kind;
+	i8 spriteId;
 } Thing;
 
 typedef struct {
-  Thing *things;
-  u16 *activeIds;
-  Texture *spritesheet;
+  Thing things[MAX_THINGS];
+  u16 activeIds[MAX_THINGS];
   u16 kindHeads[KIND_AMOUNT];
+  Texture *spritesheet;
   u16 activeCount;
   u16 nextEmptySlot;
   i16 spawnerCounter;
@@ -84,6 +87,8 @@ typedef struct {
 } Animation;
 
 extern const Animation ANIMATIONS[];
+extern const i16 COSTABLE[360];
+extern const i16 SINTABLE[360];
 
 typedef void (*CollisionCallback)(State *state, u16 id1, u16 id2);
 

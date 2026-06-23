@@ -8,7 +8,6 @@
 #include <math.h>
 #include <raylib.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #define SHIP_SPD 2
 #define BULLET_SPD 5
@@ -58,8 +57,8 @@ const Formation FORMATIONS[] = {
 // base values for particle templates
 typedef struct {
 	const u8 (*colorPalette)[MAX_COLORS][4];
-	i16 shrink;
-	i16 scale; // fixed point
+	i8 shrink; // 4.4
+	i8 scale; // 4.4
 	i8 lifetime;
 	i8 speed;
 	u8 colorCount;
@@ -78,8 +77,8 @@ const u8 exhaustPalette[MAX_COLORS][4] = {
 };
 
 Particle PARTICLES[] = {
-    [PARTICLE_EXHAUST] = {.scale = TO_FIXED(2.5),
-                          .shrink = TO_FIXED(0.1),
+    [PARTICLE_EXHAUST] = {.scale = TO_FIXED_8(2.5),
+                          .shrink = TO_FIXED_8(0.1),
                           .lifetime = 16,
                           .colorCount = 4,
                           .colorPalette = &exhaustPalette},
@@ -89,21 +88,22 @@ void shipUpdate(State *state, u16 id);
 void spawnerUpdate(State *state);
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId);
 
+State state;
+
 int main(void) {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
   SetTargetFPS(60);
 
-  State state;
   init(&state);
 
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
   u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
-                                    .subX = TO_FIXED(64),
-                                    .subY = TO_FIXED(64),
-                                    .scaleX = TO_FIXED(1),
-                                    .scaleY = TO_FIXED(1),
+                                    .subX = TO_FIXED_16(64),
+                                    .subY = TO_FIXED_16(64),
+                                    .scaleX = TO_FIXED_8(1),
+                                    .scaleY = TO_FIXED_8(1),
                                     .spriteId = 0,
                                     .mask = {.width = 8, .height = 8}});
 
@@ -129,16 +129,15 @@ int main(void) {
       }
 
       if (t->kind == ALIENKIND) {
-        t->rotation = (i16)(sinf(GetTime() * ALIEN_ROTATION_SPD) *
-                            ALIEN_ROTATION_AMPLITUDE);
-        t->subY += TO_FIXED(0.25);
+        t->rotation = DEG2BRAD((sinf(GetTime() * ALIEN_ROTATION_SPD) * ALIEN_ROTATION_AMPLITUDE));
+        t->subY += TO_FIXED_16(0.25);
       }
 
       if (t->kind == BULLETKIND) {
-        float rad = (float)t->rotation * (PI / 180.0f);
+        float rad = BRAD2RAD(t->rotation);
 
-        t->subX += TO_FIXED(cosf(rad) * BULLET_SPD);
-        t->subY += TO_FIXED(sinf(rad) * BULLET_SPD);
+        t->subX += TO_FIXED_16(cosf(rad) * BULLET_SPD);
+        t->subY += TO_FIXED_16(sinf(rad) * BULLET_SPD);
 
         if (t->subY <= 0) {
           rem(&state, id);
@@ -175,8 +174,8 @@ int main(void) {
         if (template.colorCount != 0) {
           const u8(*palette)[4] = *template.colorPalette;
           if (template.colorCount == 1) {
-            DrawEllipse((int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY),
-                        TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY),
+            DrawEllipse((int)TO_FLOAT_16(thing->subX), (int)TO_FLOAT_16(thing->subY),
+                        TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
                         RAW_TO_COLOR(palette[0]));
           } else {
             float percentage =
@@ -184,8 +183,8 @@ int main(void) {
             int idx = (int)floorf(percentage * (float)template.colorCount);
 
             DrawEllipse(
-                (int)TO_FLOAT(thing->subX), (int)TO_FLOAT(thing->subY),
-                TO_FLOAT(thing->scaleX), TO_FLOAT(thing->scaleY),
+                (int)TO_FLOAT_16(thing->subX), (int)TO_FLOAT_16(thing->subY),
+                TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
                 RAW_TO_COLOR(palette[clamp(idx, 0, template.colorCount - 1)]));
           }
         }
@@ -221,8 +220,6 @@ int main(void) {
     EndDrawing();
   }
 
-  free(state.things);
-  free(state.activeIds);
   UnloadRenderTexture(renderTexture);
   UnloadTexture(spritesheet);
   CloseWindow();
@@ -242,38 +239,38 @@ void shipUpdate(State *state, u16 id) {
                    .kind = BULLETKIND,
                    .subX = ship->subX,
                    .subY = ship->subY,
-                   .rotation = 270,
-                   .scaleX = TO_FIXED(1),
-                   .scaleY = TO_FIXED(1),
+                   .rotation = DEG2BRAD(270),
+                   .scaleX = TO_FIXED_8(1),
+                   .scaleY = TO_FIXED_8(1),
                    .mask = {.width = 8, .height = 8},
                });
   }
 
   if (moveX != 0) {
     ship->spriteId = 1;
-    ship->scaleX = TO_FIXED(moveX);
+    ship->scaleX = TO_FIXED_8(moveX);
   } else {
     ship->spriteId = 0;
-    ship->scaleX = TO_FIXED(1);
+    ship->scaleX = TO_FIXED_8(1);
   }
 
   if (moveX != 0 || moveY != 0) {
     i16 scale = PARTICLES[PARTICLE_EXHAUST].scale;
     add(state, (Thing){.kind = PARTICLEKIND,
                        .parentId = PARTICLE_EXHAUST,
-                       .subX = ship->subX + TO_FIXED(randomRange(-2, 2)),
-                       .subY = ship->subY + TO_FIXED(randomRange(-2, 2)),
+                       .subX = ship->subX + TO_FIXED_16(randomRange(-2, 2)),
+                       .subY = ship->subY + TO_FIXED_16(randomRange(-2, 2)),
                        .scaleX = scale,
                        .scaleY = scale,
                        .alarms = {[1] = PARTICLES[PARTICLE_EXHAUST].lifetime}});
   }
 
-  ship->subX += TO_FIXED(SHIP_SPD * moveX);
-  ship->subY += TO_FIXED(SHIP_SPD * moveY);
+  ship->subX += TO_FIXED_16(SHIP_SPD * moveX);
+  ship->subY += TO_FIXED_16(SHIP_SPD * moveY);
 
-  ship->subX = TO_FIXED(fclamp(TO_FLOAT(ship->subX), (float)HALF_TILE_SIZE,
+  ship->subX = TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subX), (float)HALF_TILE_SIZE,
                                (float)(GAME_WIDTH - HALF_TILE_SIZE)));
-  ship->subY = TO_FIXED(fclamp(TO_FLOAT(ship->subY), (float)HALF_TILE_SIZE,
+  ship->subY = TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subY), (float)HALF_TILE_SIZE,
                                (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
 }
 
@@ -293,11 +290,11 @@ void spawnerUpdate(State *state) {
       i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
       add(state, (Thing){
                      .kind = ALIENKIND,
-                     .subX = TO_FIXED(tileX * TILE_SIZE + HALF_TILE_SIZE),
-                     .subY = TO_FIXED(posY),
+                     .subX = TO_FIXED_16(tileX * TILE_SIZE + HALF_TILE_SIZE),
+                     .subY = TO_FIXED_16(posY),
                      .mask = {.width = 6, .height = 6},
-                     .scaleX = TO_FIXED(1),
-                     .scaleY = TO_FIXED(1),
+                     .scaleX = TO_FIXED_8(1),
+                     .scaleY = TO_FIXED_8(1),
                  });
     }
   }

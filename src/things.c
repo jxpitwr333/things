@@ -11,8 +11,6 @@ const Animation ANIMATIONS[] = {
     [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}};
 
 void init(State *state) {
-  state->things = malloc(MAX_THINGS * sizeof(Thing));
-  state->activeIds = malloc(MAX_THINGS * sizeof(u16));
   state->activeCount = 0;
   memset(state->activeIds, NIL, MAX_THINGS * sizeof(u16));
 
@@ -84,16 +82,16 @@ void rem(State *state, u16 id) {
   state->nextEmptySlot = id;
 }
 
-static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY, i16 scaleX, i16 scaleY, i16 rotation) {
+static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY, i8 scaleX, i8 scaleY, u8 rotation) {
   u16 col = spriteId % SHEET_COLUMNS;
   u16 row = spriteId / SHEET_COLUMNS;
 
-  float renderX = floorf(TO_FLOAT(subX));
-  float renderY = floorf(TO_FLOAT(subY));
+  float renderX = floorf(TO_FLOAT_16(subX));
+  float renderY = floorf(TO_FLOAT_16(subY));
 
   float f32TileSize = (float)TILE_SIZE;
-  float absScaleX = fabsf(TO_FLOAT(scaleX));
-  float absScaleY = fabsf(TO_FLOAT(scaleY));
+  float absScaleX = fabsf(TO_FLOAT_8(scaleX));
+  float absScaleY = fabsf(TO_FLOAT_8(scaleY));
 
   float destWidth = f32TileSize * absScaleX;
   float destHeight = f32TileSize * absScaleY;
@@ -108,7 +106,7 @@ static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY,
       (Rectangle){.x = col * TILE_SIZE, .y = row * TILE_SIZE, .width = srcWidth, .height = srcHeight},
       (Rectangle){.x = renderX, .y = renderY, .width = destWidth, .height = destHeight},
       (Vector2){destWidth * 0.5f, destHeight * 0.5f},
-      (float)rotation, WHITE);
+      (float)BRAD2DEG(rotation), WHITE);
 }
 
 void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
@@ -180,8 +178,8 @@ void kindUnlink(State *state, u16 id) {
 }
 
 bool checkOBB(Thing *t1, Thing *t2) {
-  float rad1 = (float)t1->rotation * (PI / 180.0f);
-  float rad2 = (float)t2->rotation * (PI / 180.0f);
+  float rad1 = BRAD2RAD(t1->rotation);
+  float rad2 = BRAD2RAD(t2->rotation);
 
   float c1 = cosf(rad1);
   float s1 = sinf(rad1);
@@ -190,15 +188,15 @@ bool checkOBB(Thing *t1, Thing *t2) {
 
   Vector2 axes[4] = {{c1, s1}, {-s1, c1}, {c2, s2}, {-s2, c2}};
 
-  float p1x = TO_FLOAT(t1->subX);
-  float p1y = TO_FLOAT(t1->subY);
-  float p2x = TO_FLOAT(t2->subX);
-  float p2y = TO_FLOAT(t2->subY);
+  float p1x = TO_FLOAT_16(t1->subX);
+  float p1y = TO_FLOAT_16(t1->subY);
+  float p2x = TO_FLOAT_16(t2->subX);
+  float p2y = TO_FLOAT_16(t2->subY);
 
-  float s1x = TO_FLOAT(t1->scaleX);
-  float s1y = TO_FLOAT(t1->scaleY);
-  float s2x = TO_FLOAT(t2->scaleX);
-  float s2y = TO_FLOAT(t2->scaleY);
+  float s1x = TO_FLOAT_8(t1->scaleX);
+  float s1y = TO_FLOAT_8(t1->scaleY);
+  float s2x = TO_FLOAT_8(t2->scaleX);
+  float s2y = TO_FLOAT_8(t2->scaleY);
 
   float hx1 = (float)t1->mask.width * s1x * 0.5f;
   float hy1 = (float)t1->mask.height * s1y * 0.5f;
@@ -214,12 +212,12 @@ bool checkOBB(Thing *t1, Thing *t2) {
 
   for (int i = 0; i < 4; i++) {
     Vector2 a = axes[i];
-    float dist = ABS(d.x * a.x + d.y * a.y);
+    float dist = fabsf(d.x * a.x + d.y * a.y);
 
-    float r1 = hx1 * ABS(axes[0].x * a.x + axes[0].y * a.y) +
-               hy1 * ABS(axes[1].x * a.x + axes[1].y * a.y);
-    float r2 = hx2 * ABS(axes[2].x * a.x + axes[2].y * a.y) +
-               hy2 * ABS(axes[3].x * a.x + axes[3].y * a.y);
+    float r1 = hx1 * fabsf(axes[0].x * a.x + axes[0].y * a.y) +
+               hy1 * fabsf(axes[1].x * a.x + axes[1].y * a.y);
+    float r2 = hx2 * fabsf(axes[2].x * a.x + axes[2].y * a.y) +
+               hy2 * fabsf(axes[3].x * a.x + axes[3].y * a.y);
 
     if (dist > (r1 + r2))
       return false;
@@ -229,13 +227,13 @@ bool checkOBB(Thing *t1, Thing *t2) {
 }
 
 void drawThingMask(Thing *thing, Color color) {
-  float px = TO_FLOAT(thing->subX);
-  float py = TO_FLOAT(thing->subY);
+  float px = TO_FLOAT_16(thing->subX);
+  float py = TO_FLOAT_16(thing->subY);
 
-  float sx = TO_FLOAT(thing->scaleX);
-  float sy = TO_FLOAT(thing->scaleY);
+  float sx = TO_FLOAT_8(thing->scaleX);
+  float sy = TO_FLOAT_8(thing->scaleY);
 
-  float rad = (float)thing->rotation * (PI / 180.0f);
+  float rad = BRAD2RAD(thing->rotation);
   float c = cosf(rad);
   float s = sinf(rad);
 
