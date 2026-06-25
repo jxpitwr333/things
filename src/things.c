@@ -10,6 +10,44 @@ const Animation ANIMATIONS[] = {
     [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 16, .loops = true},
     [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}};
 
+const i8 SINTABLE[256] = {
+       0,    3,    6,    9,   13,   16,   19,   22,   25,   28,   31,   34,   37,   40,   43,   46,
+      49,   52,   55,   58,   60,   63,   66,   68,   71,   74,   76,   79,   81,   84,   86,   88,
+      91,   93,   95,   97,   99,  101,  103,  105,  106,  108,  110,  111,  113,  114,  116,  117,
+     118,  119,  121,  122,  122,  123,  124,  125,  126,  126,  127,  127,  127,  127,  127,  127,
+     127,  127,  127,  127,  127,  127,  127,  126,  126,  125,  124,  123,  122,  122,  121,  119,
+     118,  117,  116,  114,  113,  111,  110,  108,  106,  105,  103,  101,   99,   97,   95,   93,
+      91,   88,   86,   84,   81,   79,   76,   74,   71,   68,   66,   63,   60,   58,   55,   52,
+      49,   46,   43,   40,   37,   34,   31,   28,   25,   22,   19,   16,   13,    9,    6,    3,
+       0,   -3,   -6,   -9,  -13,  -16,  -19,  -22,  -25,  -28,  -31,  -34,  -37,  -40,  -43,  -46,
+     -49,  -52,  -55,  -58,  -60,  -63,  -66,  -68,  -71,  -74,  -76,  -79,  -81,  -84,  -86,  -88,
+     -91,  -93,  -95,  -97,  -99, -101, -103, -105, -106, -108, -110, -111, -113, -114, -116, -117,
+    -118, -119, -121, -122, -122, -123, -124, -125, -126, -126, -127, -127, -127, -128, -128, -128,
+    -128, -128, -128, -128, -127, -127, -127, -126, -126, -125, -124, -123, -122, -122, -121, -119,
+    -118, -117, -116, -114, -113, -111, -110, -108, -106, -105, -103, -101,  -99,  -97,  -95,  -93,
+     -91,  -88,  -86,  -84,  -81,  -79,  -76,  -74,  -71,  -68,  -66,  -63,  -60,  -58,  -55,  -52,
+     -49,  -46,  -43,  -40,  -37,  -34,  -31,  -28,  -25,  -22,  -19,  -16,  -13,   -9,   -6,   -3,
+};
+
+const i8 COSTABLE[256]= {
+     127,  127,  127,  127,  127,  127,  127,  126,  126,  125,  124,  123,  122,  122,  121,  119,
+     118,  117,  116,  114,  113,  111,  110,  108,  106,  105,  103,  101,   99,   97,   95,   93,
+      91,   88,   86,   84,   81,   79,   76,   74,   71,   68,   66,   63,   60,   58,   55,   52,
+      49,   46,   43,   40,   37,   34,   31,   28,   25,   22,   19,   16,   13,    9,    6,    3,
+       0,   -3,   -6,   -9,  -13,  -16,  -19,  -22,  -25,  -28,  -31,  -34,  -37,  -40,  -43,  -46,
+     -49,  -52,  -55,  -58,  -60,  -63,  -66,  -68,  -71,  -74,  -76,  -79,  -81,  -84,  -86,  -88,
+     -91,  -93,  -95,  -97,  -99, -101, -103, -105, -106, -108, -110, -111, -113, -114, -116, -117,
+    -118, -119, -121, -122, -122, -123, -124, -125, -126, -126, -127, -127, -127, -128, -128, -128,
+    -128, -128, -128, -128, -127, -127, -127, -126, -126, -125, -124, -123, -122, -122, -121, -119,
+    -118, -117, -116, -114, -113, -111, -110, -108, -106, -105, -103, -101,  -99,  -97,  -95,  -93,
+     -91,  -88,  -86,  -84,  -81,  -79,  -76,  -74,  -71,  -68,  -66,  -63,  -60,  -58,  -55,  -52,
+     -49,  -46,  -43,  -40,  -37,  -34,  -31,  -28,  -25,  -22,  -19,  -16,  -13,   -9,   -6,   -3,
+       0,    3,    6,    9,   13,   16,   19,   22,   25,   28,   31,   34,   37,   40,   43,   46,
+      49,   52,   55,   58,   60,   63,   66,   68,   71,   74,   76,   79,   81,   84,   86,   88,
+      91,   93,   95,   97,   99,  101,  103,  105,  106,  108,  110,  111,  113,  114,  116,  117,
+     118,  119,  121,  122,  122,  123,  124,  125,  126,  126,  127,  127,  127,  127,  127,  127,
+};
+
 void init(State *state) {
   state->activeCount = 0;
   memset(state->activeIds, NIL, MAX_THINGS * sizeof(u16));
@@ -177,84 +215,42 @@ void kindUnlink(State *state, u16 id) {
   }
 }
 
-bool checkOBB(Thing *t1, Thing *t2) {
-  float rad1 = BRAD2RAD(t1->rotation);
-  float rad2 = BRAD2RAD(t2->rotation);
+bool checkAABB(Thing *t1, Thing *t2) {
+    i16 s1x = t1->scaleX < 0 ? -t1->scaleX : t1->scaleX;
+    i16 s1y = t1->scaleY < 0 ? -t1->scaleY : t1->scaleY;
+    i16 s2x = t2->scaleX < 0 ? -t2->scaleX : t2->scaleX;
+    i16 s2y = t2->scaleY < 0 ? -t2->scaleY : t2->scaleY;
 
-  float c1 = cosf(rad1);
-  float s1 = sinf(rad1);
-  float c2 = cosf(rad2);
-  float s2 = sinf(rad2);
+    // 16 fixed point division leads to 8 fixed point so we instead multiply then bitshift by 3 so we get the half point.
+    i16 hx1 = (t1->mask.width  * s1x) << 3;
+    i16 hy1 = (t1->mask.height * s1y) << 3;
+    i16 hx2 = (t2->mask.width  * s2x) << 3;
+    i16 hy2 = (t2->mask.height * s2y) << 3;
 
-  Vector2 axes[4] = {{c1, s1}, {-s1, c1}, {c2, s2}, {-s2, c2}};
+    i16 dx = t1->subX - t2->subX;
+    i16 dy = t1->subY - t2->subY;
+    if (dx < 0) dx = -dx;
+    if (dy < 0) dy = -dy;
 
-  float p1x = TO_FLOAT_16(t1->subX);
-  float p1y = TO_FLOAT_16(t1->subY);
-  float p2x = TO_FLOAT_16(t2->subX);
-  float p2y = TO_FLOAT_16(t2->subY);
-
-  float s1x = TO_FLOAT_8(t1->scaleX);
-  float s1y = TO_FLOAT_8(t1->scaleY);
-  float s2x = TO_FLOAT_8(t2->scaleX);
-  float s2y = TO_FLOAT_8(t2->scaleY);
-
-  float hx1 = (float)t1->mask.width * s1x * 0.5f;
-  float hy1 = (float)t1->mask.height * s1y * 0.5f;
-
-  Vector2 center1 = {p1x, p1y};
-
-  float hx2 = (float)t2->mask.width * s2x * 0.5f;
-  float hy2 = (float)t2->mask.height * s2y * 0.5f;
-
-  Vector2 center2 = {p2x, p2y};
-
-  Vector2 d = {center2.x - center1.x, center2.y - center1.y};
-
-  for (int i = 0; i < 4; i++) {
-    Vector2 a = axes[i];
-    float dist = fabsf(d.x * a.x + d.y * a.y);
-
-    float r1 = hx1 * fabsf(axes[0].x * a.x + axes[0].y * a.y) +
-               hy1 * fabsf(axes[1].x * a.x + axes[1].y * a.y);
-    float r2 = hx2 * fabsf(axes[2].x * a.x + axes[2].y * a.y) +
-               hy2 * fabsf(axes[3].x * a.x + axes[3].y * a.y);
-
-    if (dist > (r1 + r2))
-      return false;
-  }
-
-  return true;
+    return (dx < (hx1 + hx2)) && (dy < (hy1 + hy2));
 }
 
 void drawThingMask(Thing *thing, Color color) {
-  float px = TO_FLOAT_16(thing->subX);
-  float py = TO_FLOAT_16(thing->subY);
+    float px = TO_FLOAT_16(thing->subX);
+    float py = TO_FLOAT_16(thing->subY);
+    float sx = fabsf(TO_FLOAT_8(thing->scaleX));
+    float sy = fabsf(TO_FLOAT_8(thing->scaleY));
 
-  float sx = TO_FLOAT_8(thing->scaleX);
-  float sy = TO_FLOAT_8(thing->scaleY);
+    float hx = (float)thing->mask.width * sx * 0.5f;
+    float hy = (float)thing->mask.height * sy * 0.5f;
 
-  float rad = BRAD2RAD(thing->rotation);
-  float c = cosf(rad);
-  float s = sinf(rad);
-
-  float hx = (float)thing->mask.width * sx * 0.5f;
-  float hy = (float)thing->mask.height * sy * 0.5f;
-
-  Vector2 center = {px, py};
-
-  Vector2 local_corners[4] = {{-hx, -hy}, {hx, -hy}, {hx, hy}, {-hx, hy}};
-
-  Vector2 world_corners[4];
-  for (int i = 0; i < 4; i++) {
-    world_corners[i].x =
-        center.x + (local_corners[i].x * c) - (local_corners[i].y * s);
-    world_corners[i].y =
-        center.y + (local_corners[i].x * s) + (local_corners[i].y * c);
-  }
-
-  for (int i = 0; i < 4; i++) {
-    DrawLineV(world_corners[i], world_corners[(i + 1) % 4], color);
-  }
+    DrawRectangleLines(
+        (int)(px - hx),
+        (int)(py - hy),
+        (int)(hx * 2.0f),
+        (int)(hy * 2.0f),
+        color
+    );
 }
 
 void drawDebugMasks(State *state) {
@@ -303,7 +299,7 @@ void checkCollisions(State *state, Kind k1, Kind k2,
         u16 next2 = state->things[currentThing2].nextSibId;
         Thing *t2 = &state->things[currentThing2];
 
-        if (checkOBB(t1, t2)) {
+        if (checkAABB(t1, t2)) {
           if (currentThing1 == head1)
             head1 = state->things[currentThing1].nextSibId;
           if (currentThing2 == head2)

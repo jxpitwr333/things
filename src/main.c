@@ -15,8 +15,8 @@
 #define MAX_FORMATION_OFFSETS 8
 #define SECONDS(n) (n * ((i16)60))
 
-#define ALIEN_ROTATION_SPD 5.0f
-#define ALIEN_ROTATION_AMPLITUDE 15.0f
+#define ALIEN_ROTATION_SPD 4
+#define ALIEN_ROTATION_AMPLITUDE DEG2BRAD(15)
 
 typedef enum {
   FORMATION_V,
@@ -129,15 +129,14 @@ int main(void) {
       }
 
       if (t->kind == ALIENKIND) {
-        t->rotation = DEG2BRAD((sinf(GetTime() * ALIEN_ROTATION_SPD) * ALIEN_ROTATION_AMPLITUDE));
+        u8 wave_idx = (u8)(t->alarms[0] * 4);
+        t->rotation = (SINTABLE[wave_idx] * ALIEN_ROTATION_AMPLITUDE) >> 7;
         t->subY += TO_FIXED_16(0.25);
       }
 
       if (t->kind == BULLETKIND) {
-        float rad = BRAD2RAD(t->rotation);
-
-        t->subX += TO_FIXED_16(cosf(rad) * BULLET_SPD);
-        t->subY += TO_FIXED_16(sinf(rad) * BULLET_SPD);
+        t->subX += (COSTABLE[t->rotation] * BULLET_SPD) << 1;
+        t->subY += (SINTABLE[t->rotation] * BULLET_SPD) << 1;
 
         if (t->subY <= 0) {
           rem(&state, id);
@@ -205,7 +204,7 @@ int main(void) {
       }
     }
 
-    // drawDebugMasks(&state);
+    drawDebugMasks(&state);
     EndTextureMode();
 
     BeginDrawing();

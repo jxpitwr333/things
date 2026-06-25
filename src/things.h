@@ -104,8 +104,9 @@ typedef struct {
 } Animation;
 
 extern const Animation ANIMATIONS[];
-extern const i16 COSTABLE[360];
-extern const i16 SINTABLE[360];
+
+extern const i8 SINTABLE[256];
+extern const i8 COSTABLE[256];
 
 typedef void (*CollisionCallback)(State *state, u16 id1, u16 id2);
 
@@ -118,7 +119,7 @@ void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim);
 void kindLink(State *state, u16 id);
 void kindUnlink(State *state, u16 id);
 
-bool checkOBB(Thing *t1, Thing *t2);
+bool checkAABB(Thing *t1, Thing *t2);
 void drawThingMask(Thing *thing, Color color);
 void drawDebugMasks(State *state);
 void checkCollisions(State *state, Kind k1, Kind k2,
@@ -137,7 +138,7 @@ static inline Color hex2Color(i32 hex) {
         .r = (u8)((hex >> 16) & 0xFF),
         .g = (u8)((hex >> 8)  & 0xFF),
         .b = (u8)(hex         & 0xFF),
-        .a = 255                      
+        .a = 255
     };
 }
 
