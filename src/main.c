@@ -25,13 +25,13 @@ typedef enum {
 } FormationType;
 
 typedef struct {
-  i16 x, y;
-} Vector2Short;
+  i8 x, y;
+} Vector2_i8;
 
 typedef struct {
-  i16 min_tile;
-  i16 max_tile;
-  Vector2Short offsets[MAX_FORMATION_OFFSETS];
+  i8 min_tile;
+  i8 max_tile;
+  Vector2_i8 offsets[MAX_FORMATION_OFFSETS];
   u8 count;
 } Formation;
 
@@ -304,11 +304,11 @@ void spawnerUpdate(State *state) {
     state->spawnerCounter = 0;
 
     Formation chosenFormation = FORMATIONS[randomRange(0, FORMATION_COUNT)];
-    i16 baseTile =
+    i8 baseTile =
         randomRange(chosenFormation.min_tile, chosenFormation.max_tile + 1);
 
-    for (i16 i = 0; i < chosenFormation.count; ++i) {
-      Vector2Short offset = chosenFormation.offsets[i];
+    for (i8 i = 0; i < chosenFormation.count; ++i) {
+      Vector2_i8 offset = chosenFormation.offsets[i];
       i16 tileX = baseTile + offset.x;
       i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
       add(state, (Thing){
