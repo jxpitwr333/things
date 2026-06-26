@@ -48,6 +48,13 @@ const i8 COSTABLE[256]= {
      118,  119,  121,  122,  122,  123,  124,  125,  126,  126,  127,  127,  127,  127,  127,  127,
 };
 
+const Kind DRAW_ORDER[] = {
+    PARTICLEKIND,
+    ALIENKIND,
+    BULLETKIND,
+    SHIPKIND
+};
+
 void init(State *state) {
   state->activeCount = 0;
   memset(state->activeIds, NIL, MAX_THINGS * sizeof(u16));

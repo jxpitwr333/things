@@ -1,7 +1,6 @@
 /*
  * TODO: standardize thing stats in templates, otherwise i have to keep chasing
  * values around everytime i do a rewrite.
- * TODO: draw order
  */
 
 #include "things.h"
@@ -165,46 +164,66 @@ int main(void) {
     snprintf(buffer, sizeof(buffer), "things: %d", state.activeCount);
     DrawText(buffer, 20, 20, 8, hex2Color(GREEN_HEX));
 
-    for (u16 i = 0; i < state.activeCount; ++i) {
-      u16 id = state.activeIds[i];
-      Thing *thing = &state.things[id];
+    for (u16 i = 0; i < KIND_AMOUNT; ++i) {
+        Kind k = DRAW_ORDER[i];
+        u16 head = state.kindHeads[k];
+        if (head == NIL) continue;
+        u16 current = head;
 
-      switch (thing->kind) {
-      case PARTICLEKIND: {
-        Particle template = PARTICLES[thing->parentId];
-        if (template.colorCount != 0) {
-          i32 *palette = template.colorPalette;
-          if (template.colorCount == 1) {
-            DrawEllipse((int)TO_FLOAT_16(thing->subX),
-                        (int)TO_FLOAT_16(thing->subY),
-                        TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
-                        hex2Color(palette[0]));
-          } else {
-            float percentage =
-                (float)thing->alarms[1] / (float)template.lifetime;
-            int idx = (int)floorf(percentage * (float)template.colorCount);
+        switch (k) {
+            case PARTICLEKIND: {
+                do {
+                    Thing* thing = &state.things[current];
+                    Particle template = PARTICLES[thing->parentId];
 
-            DrawEllipse(
-                (int)TO_FLOAT_16(thing->subX), (int)TO_FLOAT_16(thing->subY),
-                TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
-                hex2Color(palette[clamp(idx, 0, template.colorCount - 1)]));
-          }
+                    if (template.colorCount != 0) {
+                        i32 *palette = template.colorPalette;
+                        if (template.colorCount == 1) {
+                            DrawEllipse((int)TO_FLOAT_16(thing->subX),
+                                        (int)TO_FLOAT_16(thing->subY),
+                                        TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
+                                        hex2Color(palette[0]));
+                        } else {
+                            float percentage = (float)thing->alarms[1] / (float)template.lifetime;
+                            int idx = (int)floorf(percentage * (float)template.colorCount);
+                            DrawEllipse(
+                                (int)TO_FLOAT_16(thing->subX), (int)TO_FLOAT_16(thing->subY),
+                                TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
+                                hex2Color(palette[clamp(idx, 0, template.colorCount - 1)]));
+                        }
+                    }
+                    current = thing->nextSibId;
+                } while (current != head);
+                break;
+            }
+
+            case BULLETKIND: {
+                do {
+                    Thing* thing = &state.things[current];
+                    drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
+                    current = thing->nextSibId;
+                } while (current != head);
+                break;
+            }
+
+            case ALIENKIND: {
+                do {
+                    Thing* thing = &state.things[current];
+                    drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_GREEN]);
+                    current = thing->nextSibId;
+                } while (current != head);
+                break;
+            }
+
+            default: {
+                do {
+                    Thing* thing = &state.things[current];
+                    drawThing(&spritesheet, thing);
+                    current = thing->nextSibId;
+                } while (current != head);
+                break;
+            }
         }
-        break;
-      }
-
-      case BULLETKIND:
-        drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
-        break;
-
-      case ALIENKIND:
-        drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_GREEN]);
-        break;
-
-      default:
-        drawThing(&spritesheet, thing);
-        break;
-      }
     }
 
     // drawDebugMasks(&state);

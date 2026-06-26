@@ -63,6 +63,8 @@ typedef enum {
   KIND_AMOUNT,
 } Kind;
 
+extern const Kind DRAW_ORDER[];
+
 typedef struct {
   i8 width, height;
 } Mask;
