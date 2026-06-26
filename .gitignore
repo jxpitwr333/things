@@ -1,2 +1,6 @@
 .tags
 tags
+build/*
+*.o
+*.exe
+game.*
