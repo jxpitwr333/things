@@ -129,7 +129,7 @@ int main(void) {
       }
 
       if (t->kind == ALIENKIND) {
-        u8 wave_idx = (u8)(t->alarms[0] * 4);
+        u8 wave_idx = (u8)(t->alarms[0] * ALIEN_ROTATION_SPD);
         t->rotation = (SINTABLE[wave_idx] * ALIEN_ROTATION_AMPLITUDE) >> 7;
         t->subY += TO_FIXED_16(0.25);
       }
@@ -204,7 +204,7 @@ int main(void) {
       }
     }
 
-    drawDebugMasks(&state);
+    // drawDebugMasks(&state);
     EndTextureMode();
 
     BeginDrawing();
