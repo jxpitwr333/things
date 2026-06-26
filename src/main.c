@@ -4,9 +4,9 @@
  * TODO: draw order
  */
 
-#include <raylib.h>
 #include "things.h"
 #include <math.h>
+#include <raylib.h>
 #include <stdio.h>
 
 #define SHIP_SPD 2
@@ -30,10 +30,10 @@ typedef struct {
 } Vector2Short;
 
 typedef struct {
-	i16 min_tile;
-	i16 max_tile;
-	Vector2Short offsets[MAX_FORMATION_OFFSETS];
-	u8 count;
+  i16 min_tile;
+  i16 max_tile;
+  Vector2Short offsets[MAX_FORMATION_OFFSETS];
+  u8 count;
 } Formation;
 
 const Formation FORMATIONS[] = {
@@ -56,12 +56,12 @@ const Formation FORMATIONS[] = {
 
 // base values for particle templates
 typedef struct {
-	i32* colorPalette;
-	i8 shrink;
-	i8 scale;
-	i8 lifetime;
-	i8 speed;
-	u8 colorCount;
+  i32 *colorPalette;
+  i8 shrink;
+  i8 scale;
+  i8 lifetime;
+  i8 speed;
+  u8 colorCount;
 } Particle;
 
 typedef enum {
@@ -70,10 +70,10 @@ typedef enum {
 } ParticleType;
 
 i32 exhaustPalette[MAX_COLORS] = {
-	GREY_HEX,
-	ORANGE_HEX,
-	YELLOW_HEX,
-	WHITE_HEX,
+    GREY_HEX,
+    ORANGE_HEX,
+    YELLOW_HEX,
+    WHITE_HEX,
 };
 
 Particle PARTICLES[] = {
@@ -129,7 +129,9 @@ int main(void) {
       }
 
       if (t->kind == ALIENKIND) {
-        u8 wave_idx = (u8)(t->alarms[0] * ALIEN_ROTATION_SPD);
+        if (t->alarms[2] <= 0)
+          t->alarms[2] = 255;
+        u8 wave_idx = (u8)(t->alarms[2] * ALIEN_ROTATION_SPD);
         t->rotation = (SINTABLE[wave_idx] * ALIEN_ROTATION_AMPLITUDE) >> 7;
         t->subY += TO_FIXED_16(0.25);
       }
@@ -171,9 +173,10 @@ int main(void) {
       case PARTICLEKIND: {
         Particle template = PARTICLES[thing->parentId];
         if (template.colorCount != 0) {
-          i32* palette = template.colorPalette;
+          i32 *palette = template.colorPalette;
           if (template.colorCount == 1) {
-            DrawEllipse((int)TO_FLOAT_16(thing->subX), (int)TO_FLOAT_16(thing->subY),
+            DrawEllipse((int)TO_FLOAT_16(thing->subX),
+                        (int)TO_FLOAT_16(thing->subY),
                         TO_FLOAT_8(thing->scaleX), TO_FLOAT_8(thing->scaleY),
                         hex2Color(palette[0]));
           } else {
@@ -267,10 +270,12 @@ void shipUpdate(State *state, u16 id) {
   ship->subX += TO_FIXED_16(SHIP_SPD * moveX);
   ship->subY += TO_FIXED_16(SHIP_SPD * moveY);
 
-  ship->subX = TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subX), (float)HALF_TILE_SIZE,
-                               (float)(GAME_WIDTH - HALF_TILE_SIZE)));
-  ship->subY = TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subY), (float)HALF_TILE_SIZE,
-                               (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
+  ship->subX =
+      TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subX), (float)HALF_TILE_SIZE,
+                         (float)(GAME_WIDTH - HALF_TILE_SIZE)));
+  ship->subY =
+      TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subY), (float)HALF_TILE_SIZE,
+                         (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
 }
 
 void spawnerUpdate(State *state) {
