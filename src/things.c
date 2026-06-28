@@ -1,7 +1,5 @@
 #include "things.h"
 #include <math.h>
-#include <raylib.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -340,7 +338,22 @@ void checkCollisions(State *state, Kind k1, Kind k2,
   } while (currentThing1 != head1);
 }
 
+int clamp(int value, int min, int max) {
+  return (value > max ? max : (value < min ? min : value));
+}
+
+float fclamp(float value, float min, float max) {
+  return (value > max ? max : (value < min ? min : value));
+}
+
 int randomRange(int min, int max) {
 	// [min, max)
 	return (rand() % (max - min)) + min;
+}
+
+Color hex2Color(i32 hex) {
+  return (Color){.r = (u8)((hex >> 16) & 0xFF),
+                 .g = (u8)((hex >> 8) & 0xFF),
+                 .b = (u8)(hex & 0xFF),
+                 .a = 255};
 }

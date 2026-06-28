@@ -1,14 +1,9 @@
 #ifndef THINGS_H
 #define THINGS_H
 
+#include "defs.h"
+#include <stdbool.h>
 #include <raylib.h>
-#include <stdint.h>
-
-typedef uint16_t u16;
-typedef int16_t i16;
-typedef int8_t i8;
-typedef uint8_t u8;
-typedef int32_t i32;
 
 #define MAX_THINGS ((u16)4096)
 #define NIL ((u16)0)
@@ -17,8 +12,8 @@ typedef int32_t i32;
 
 #define GAME_WIDTH 128
 #define GAME_HEIGHT 128
-#define WINDOW_WIDTH 512
-#define WINDOW_HEIGHT 512
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 800
 
 #define TILE_SIZE 8
 #define HALF_TILE_SIZE 4
@@ -38,21 +33,21 @@ typedef int32_t i32;
 #define RAD2BRAD(theta) ((u8)((float)(theta) * (256.0f / (2.0f * PI))))
 #define BRAD2RAD(theta) ((float)(theta) * ((2.0f * PI) / 256.0f))
 
-#define BLUE_HEX		0x1D2B53
-#define MAROON_HEX		0x7E2553
-#define GREEN_HEX		0x008751
-#define BROWN_HEX		0xAB5236
-#define DARK_GREY_HEX 	0x5F574F
-#define LIGHT_GREY_HEX 	0xC2C3C7
-#define WHITE_HEX		0xFFF1E8
-#define RED_HEX			0xFF004D
-#define ORANGE_HEX		0xFFA300
-#define YELLOW_HEX		0xFFEC27
-#define LIME_HEX		0x00E436
-#define SKYBLUE_HEX 	0x29ADFF
-#define GREY_HEX		0x83769C
-#define PINK_HEX		0xFF77A8
-#define PEACH_HEX		0xFFCCAA
+#define BLUE_HEX 0x1D2B53
+#define MAROON_HEX 0x7E2553
+#define GREEN_HEX 0x008751
+#define BROWN_HEX 0xAB5236
+#define DARK_GREY_HEX 0x5F574F
+#define LIGHT_GREY_HEX 0xC2C3C7
+#define WHITE_HEX 0xFFF1E8
+#define RED_HEX 0xFF004D
+#define ORANGE_HEX 0xFFA300
+#define YELLOW_HEX 0xFFEC27
+#define LIME_HEX 0x00E436
+#define SKYBLUE_HEX 0x29ADFF
+#define GREY_HEX 0x83769C
+#define PINK_HEX 0xFF77A8
+#define PEACH_HEX 0xFFCCAA
 
 typedef enum {
   NILKIND,
@@ -70,28 +65,29 @@ typedef struct {
 } Mask;
 
 typedef struct {
-	i16 alarms[MAX_ALARMS]; // alarm[0] is reserved for ticking the thing's animation.
-	u16 id;
-	u16 denseId;
-	i16 subX;
-	i16 subY;
-	u16 parentId;
-	u16 firstChildId;
-	u16 nextSibId;
-	u16 prevSibId;
-	Mask mask;
-	i8 scaleX;
-	i8 scaleY;
-	u8 rotation;
-	u8 kind;
-	i8 spriteId;
+  // alarm[0] is reserved for ticking the thing's animation.
+  i16 alarms[MAX_ALARMS];
+  u16 id;
+  u16 denseId;
+  i16 subX;
+  i16 subY;
+  u16 parentId;
+  u16 firstChildId;
+  u16 nextSibId;
+  u16 prevSibId;
+  Mask mask;
+  i8 scaleX;
+  i8 scaleY;
+  u8 rotation;
+  u8 kind;
+  i8 spriteId;
 } Thing;
 
 typedef struct {
+  Texture *spritesheet;
   Thing things[MAX_THINGS];
   u16 activeIds[MAX_THINGS];
   u16 kindHeads[KIND_AMOUNT];
-  Texture *spritesheet;
   u16 activeCount;
   u16 nextEmptySlot;
   i16 spawnerCounter;
@@ -100,9 +96,9 @@ typedef struct {
 typedef enum { ANIM_GREEN, ANIM_BULLET } AnimNames;
 
 typedef struct {
-	bool loops;
-	i8 ticksPerFrame;
-	i8 frames[MAX_FRAMES];
+  bool loops;
+  i8 ticksPerFrame;
+  i8 frames[MAX_FRAMES];
 } Animation;
 
 extern const Animation ANIMATIONS[];
@@ -127,21 +123,10 @@ void drawDebugMasks(State *state);
 void checkCollisions(State *state, Kind k1, Kind k2,
                      CollisionCallback onCollide);
 
-static inline int clamp(int value, int min, int max) {
-  return (value > max ? max : (value < min ? min : value));
-}
-static inline float fclamp(float value, float min, float max) {
-  return (value > max ? max : (value < min ? min : value));
-}
-int randomRange(int min, int max);
+int clamp(int value, int min, int max);
+float fclamp(float value, float min, float max);
 
-static inline Color hex2Color(i32 hex) {
-    return (Color){
-        .r = (u8)((hex >> 16) & 0xFF),
-        .g = (u8)((hex >> 8)  & 0xFF),
-        .b = (u8)(hex         & 0xFF),
-        .a = 255
-    };
-}
+int randomRange(int min, int max);
+Color hex2Color(i32 hex);
 
 #endif
