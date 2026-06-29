@@ -3,4 +3,3 @@ tags
 build/*
 *.o
 *.exe
-game.*

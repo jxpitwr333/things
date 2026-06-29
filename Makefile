@@ -2,19 +2,13 @@ CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -Werror -std=c99 -O2
 TARGET_NAME = game
 
-# --- Configuration Paths (Can be overridden by user) ---
-# Default search paths if not specified on command line or environment
 RAYLIB_PATH ?= /usr/local
 
-# Platform detection
 ifeq ($(OS),Windows_NT)
-    # Default Raylib path for w64devkit installer on Windows
     RAYLIB_PATH = C:/raylib/raylib/src
     
-    # Include paths
     INCLUDES = -Isrc -I$(RAYLIB_PATH)
     
-    # If using w64devkit, libs might be right in raylib path or system paths
     LIBS = -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm
     
     RM = del /q /f
@@ -30,7 +24,6 @@ else
     RUN_CMD = LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(TARGET)
 endif
 
-# --- Directories and Targets ---
 SRC_DIR = src
 BUILD_DIR = build
 TARGET = $(BUILD_DIR)/$(TARGET_NAME)$(TARGET_EXT)
