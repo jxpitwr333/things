@@ -1,9 +1,15 @@
 #ifndef THINGS_H
 #define THINGS_H
 
-#include "defs.h"
+#include <stdint.h>
 #include <stdbool.h>
 #include <raylib.h>
+
+typedef uint16_t u16;
+typedef int16_t i16;
+typedef int8_t i8;
+typedef uint8_t u8;
+typedef int32_t i32;
 
 #define MAX_THINGS ((u16)4096)
 #define NIL ((u16)0)
@@ -12,6 +18,9 @@
 
 #define GAME_WIDTH 128
 #define GAME_HEIGHT 128
+#define GAME_HALFWIDTH 64
+#define GAME_HALFHEIGHT 64
+#define GAME_CENTER (Vector2){(float)GAME_HALFWIDTH, (float)GAME_HALFHEIGHT}
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
 

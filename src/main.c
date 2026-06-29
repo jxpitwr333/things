@@ -4,13 +4,11 @@
  */
 
 #include "game.h"
-#include "things.h"
 #include <stdio.h>
 
 State state;
 Camera2D camera;
 float screenshake;
-Vector2 f_GameCenter = (Vector2){(float)(GAME_WIDTH) * 0.5f, (float)(GAME_HEIGHT) * 0.5f};
 
 //static inline void addScreenshake(float amount) { screenshake += amount; }
 void updateScreenshake();
@@ -25,9 +23,9 @@ int main(void) {
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
   camera = (Camera2D){
-      .offset = f_GameCenter,
+      .offset = GAME_CENTER,
       .rotation = 0.0f,
-      .target = f_GameCenter,
+      .target = GAME_CENTER,
       .zoom = 1.0f
   };
 
@@ -144,5 +142,5 @@ void updateScreenshake() {
 		};
 	}
 
-	camera.offset = (Vector2){(f_GameCenter.x + shake_offset.x), (f_GameCenter.y + shake_offset.y)};
+	camera.offset = (Vector2){(GAME_CENTER.x + shake_offset.x), (GAME_CENTER.y + shake_offset.y)};
 }
