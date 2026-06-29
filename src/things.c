@@ -70,6 +70,16 @@ void init(State *state) {
   state->nextEmptySlot = 1;
 
   memset(&state->kindHeads, NIL, sizeof(state->kindHeads));
+
+  state->spawnerCounter = 0;
+  state->sleepTime = 0;
+  state->screenshake = 0.0f;
+  state->camera = (Camera2D){
+      .offset = GAME_CENTER,
+      .rotation = 0.0f,
+      .target = GAME_CENTER,
+      .zoom = 1.0f
+  };
 }
 
 u16 add(State *state, Thing thing) {
@@ -360,4 +370,23 @@ Color hex2Color(i32 hex) {
                  .g = (u8)((hex >> 8) & 0xFF),
                  .b = (u8)(hex & 0xFF),
                  .a = 255};
+}
+
+void updateScreenshake(State* state) {
+    if (state->screenshake >= 10.0) state->screenshake *= 0.8;
+    if (state->screenshake > 0.0) {
+        state->screenshake -= 1.0;
+    } else {
+	    state->screenshake = 0.0;
+	}
+
+	Vector2 shake_offset = {0, 0};
+	if (state->screenshake > 0.0) {
+		shake_offset = (Vector2){
+			nextFloat() * state->screenshake - state->screenshake / 2.0,
+			nextFloat() * state->screenshake - state->screenshake / 2.0,
+		};
+	}
+
+	state->camera.offset = (Vector2){(GAME_CENTER.x + shake_offset.x), (GAME_CENTER.y + shake_offset.y)};
 }

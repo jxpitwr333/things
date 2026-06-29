@@ -93,13 +93,16 @@ typedef struct {
 } Thing;
 
 typedef struct {
-  Texture *spritesheet;
-  Thing things[MAX_THINGS];
-  u16 activeIds[MAX_THINGS];
-  u16 kindHeads[KIND_AMOUNT];
-  u16 activeCount;
-  u16 nextEmptySlot;
-  i16 spawnerCounter;
+	Camera2D camera;
+	Texture *spritesheet;
+	float screenshake;
+	i32 sleepTime; // frames
+	Thing things[MAX_THINGS];
+	u16 activeIds[MAX_THINGS];
+	u16 kindHeads[KIND_AMOUNT];
+	u16 activeCount;
+	u16 nextEmptySlot;
+	i16 spawnerCounter;
 } State;
 
 typedef enum { ANIM_GREEN, ANIM_BULLET } AnimNames;
@@ -138,5 +141,7 @@ float fclamp(float value, float min, float max);
 int randomRange(int min, int max);
 float nextFloat();
 Color hex2Color(i32 hex);
+static inline void addScreenshake(State* state, float amount) { state->screenshake += amount; }
+void updateScreenshake(State* state);
 
 #endif

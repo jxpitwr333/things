@@ -7,11 +7,6 @@
 #include <stdio.h>
 
 State state;
-Camera2D camera;
-float screenshake;
-
-//static inline void addScreenshake(float amount) { screenshake += amount; }
-void updateScreenshake();
 
 int main(void) {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
@@ -22,13 +17,6 @@ int main(void) {
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
-  camera = (Camera2D){
-      .offset = GAME_CENTER,
-      .rotation = 0.0f,
-      .target = GAME_CENTER,
-      .zoom = 1.0f
-  };
-
   u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
                                     .subX = TO_FIXED_16(64),
                                     .subY = TO_FIXED_16(64),
@@ -38,39 +26,47 @@ int main(void) {
                                     .mask = {.width = 8, .height = 8}});
 
   while (!WindowShouldClose()) {
-    for (u16 i = state.activeCount; i-- > 0;) {
-      u16 id = state.activeIds[i];
-      Thing *t = &state.things[id];
 
-      switch(t->kind) {
-          case PARTICLEKIND:
-          particleUpdate(&state, t);
-          break;
-          case ALIENKIND:
-          alienUpdate(t);
-          break;
-          case BULLETKIND:
-          bulletUpdate(&state, t);
-          break;
-          default:
-          break;
-      }
+	while (state.sleepTime > 0) {
+		state.sleepTime--;
+		goto renderStage;
+	}
 
-      // increment alarm[0] for animations, decrement every other alarm.
-      t->alarms[0]++;
-      for (i16 j = 1; j < MAX_ALARMS; ++j) {
-        if (t->alarms[j] > 0)
-          t->alarms[j]--;
-      }
-    }
+	for (u16 i = state.activeCount; i-- > 0;) {
+		u16 id = state.activeIds[i];
+		Thing *t = &state.things[id];
 
-    shipUpdate(&state, ship_id);
-    spawnerUpdate(&state);
-    checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
-    updateScreenshake();
+		switch(t->kind) {
+			case PARTICLEKIND:
+			particleUpdate(&state, t);
+			break;
+			case ALIENKIND:
+			alienUpdate(t);
+			break;
+			case BULLETKIND:
+			bulletUpdate(&state, t);
+			break;
+			default:
+			break;
+		}
+
+		// increment alarm[0] for animations, decrement every other alarm.
+		t->alarms[0]++;
+		for (i16 j = 1; j < MAX_ALARMS; ++j) {
+			if (t->alarms[j] > 0)
+			t->alarms[j]--;
+		}
+		}
+
+	shipUpdate(&state, ship_id);
+	spawnerUpdate(&state);
+	checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
+	updateScreenshake(&state);
+
+renderStage:
 
     BeginTextureMode(renderTexture);
-    BeginMode2D(camera);
+    BeginMode2D(state.camera);
     ClearBackground(BLACK);
 
     char buffer[32];
@@ -104,7 +100,7 @@ int main(void) {
         } while (current != head);
     }
 
-    drawDebugMasks(&state);
+    //drawDebugMasks(&state);
     EndMode2D();
     EndTextureMode();
 
@@ -124,23 +120,4 @@ int main(void) {
   UnloadTexture(spritesheet);
   CloseWindow();
   return 0;
-}
-
-void updateScreenshake() {
-    if (screenshake >= 10.0) screenshake *= 0.8;
-    if (screenshake > 0.0) {
-        screenshake -= 1.0;
-    } else {
-	    screenshake = 0.0;
-	}
-
-	Vector2 shake_offset = {0, 0};
-	if (screenshake > 0.0) {
-		shake_offset = (Vector2){
-			nextFloat() * screenshake - screenshake / 2.0,
-			nextFloat() * screenshake - screenshake / 2.0,
-		};
-	}
-
-	camera.offset = (Vector2){(GAME_CENTER.x + shake_offset.x), (GAME_CENTER.y + shake_offset.y)};
 }

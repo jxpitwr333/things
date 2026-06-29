@@ -89,6 +89,7 @@ void shipUpdate(State *state, u16 id) {
   int moveY = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
 
   if (IsKeyDown(KEY_SPACE) && ship->alarms[1] == 0) {
+	addScreenshake(state, 4);
     ship->alarms[1] = 7;
 
     add(state, (Thing){
@@ -161,6 +162,8 @@ void spawnerUpdate(State *state) {
 }
 
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId) {
-  rem(state, bulletId);
-  rem(state, alienId);
+	addScreenshake(state, 4);
+	state->sleepTime = 2;
+  	rem(state, bulletId);
+	rem(state, alienId);
 }
