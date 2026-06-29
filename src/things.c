@@ -351,6 +351,10 @@ int randomRange(int min, int max) {
 	return (rand() % (max - min)) + min;
 }
 
+float nextFloat() {
+    return (float)rand() / (float)RAND_MAX;
+}
+
 Color hex2Color(i32 hex) {
   return (Color){.r = (u8)((hex >> 16) & 0xFF),
                  .g = (u8)((hex >> 8) & 0xFF),

@@ -127,6 +127,7 @@ int clamp(int value, int min, int max);
 float fclamp(float value, float min, float max);
 
 int randomRange(int min, int max);
+float nextFloat();
 Color hex2Color(i32 hex);
 
 #endif
