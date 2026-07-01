@@ -4,120 +4,109 @@
  */
 
 #include "game.h"
+#include "things.h"
 #include <stdio.h>
 
+_Bool g_IsRunning = 1;
 State state;
 
+void platform_create_window(int width, int height);
+void platform_process_events(void);
+void platform_present_buffer(const void *buffer, int width, int height);
+void clearBuffer(u32* backbuffer, u32 color);
+
 int main(void) {
-  InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
-  SetTargetFPS(60);
+    printf("Rat Engine starting up...\n");
 
-  init(&state);
+    platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-  Texture2D spritesheet = LoadTexture("assets/sheet.png");
-  RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
+	init(&state);
 
-  u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
-                                    .subX = TO_FIXED_16(64),
-                                    .subY = TO_FIXED_16(64),
-                                    .scaleX = TO_FIXED_8(1),
-                                    .scaleY = TO_FIXED_8(1),
-                                    .spriteId = 0,
-                                    .mask = {.width = 8, .height = 8}});
+	u16 ship_id = add(&state, (Thing){
+		.kind = SHIPKIND,
+		.subX = TO_FIXED_16(64),
+		.subY = TO_FIXED_16(64),
+		.scaleX = TO_FIXED_8(1),
+		.scaleY = TO_FIXED_8(1),
+		.spriteId = 0,
+		.mask = {.width = 8, .height = 8}
+	});
 
-  while (!WindowShouldClose()) {
+    while (g_IsRunning) {
+        platform_process_events();
 
-	while (state.sleepTime > 0) {
-		state.sleepTime--;
-		goto renderStage;
-	}
+		// update logic goes here.
 
-	for (u16 i = state.activeCount; i-- > 0;) {
-		u16 id = state.activeIds[i];
-		Thing *t = &state.things[id];
+		for (u16 i = state.activeCount; i-- > 0;) {
+			u16 id = state.activeIds[i];
+			Thing *t = &state.things[id];
 
-		switch(t->kind) {
-			case PARTICLEKIND:
-			particleUpdate(&state, t);
-			break;
-			case ALIENKIND:
-			alienUpdate(t);
-			break;
-			case BULLETKIND:
-			bulletUpdate(&state, t);
-			break;
-			default:
-			break;
+			switch(t->kind) {
+				case PARTICLEKIND:
+				particleUpdate(&state, t);
+				break;
+				case ALIENKIND:
+				alienUpdate(t);
+				break;
+				case BULLETKIND:
+				bulletUpdate(&state, t);
+				break;
+				default:
+				break;
+			}
+
+			// increment alarm[0] for animations, decrement every other alarm.
+			t->alarms[0]++;
+			for (i16 j = 1; j < MAX_ALARMS; ++j) {
+				if (t->alarms[j] > 0)
+				t->alarms[j]--;
+			}
 		}
 
-		// increment alarm[0] for animations, decrement every other alarm.
-		t->alarms[0]++;
-		for (i16 j = 1; j < MAX_ALARMS; ++j) {
-			if (t->alarms[j] > 0)
-			t->alarms[j]--;
+		shipUpdate(&state, ship_id);
+		spawnerUpdate(&state);
+		checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
+		// updateScreenshake(&state);
+
+		// draw logic goes here.
+
+		clearBuffer(state.backbuffer, BLACK_HEX);
+
+		for (u16 i = 0; i < KIND_AMOUNT - 1; ++i) {
+			Kind k = DRAW_ORDER[i];
+			u16 head = state.kindHeads[k];
+			if (head == NIL) continue;
+
+			u16 current = head;
+			do {
+				Thing *thing = &state.things[current];
+
+				switch (k) {
+					case PARTICLEKIND:
+						particleDraw(thing);
+						break;
+					case BULLETKIND:
+						drawAnim(&state, thing, &ANIMATIONS[ANIM_BULLET]);
+						break;
+					case ALIENKIND:
+						drawAnim(&state, thing, &ANIMATIONS[ANIM_GREEN]);
+						break;
+					default:
+						drawThing(&state, thing);
+						break;
+				}
+				current = thing->nextSibId;
+			} while (current != head);
 		}
-		}
 
-	shipUpdate(&state, ship_id);
-	spawnerUpdate(&state);
-	checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
-	updateScreenshake(&state);
-
-renderStage:
-
-    BeginTextureMode(renderTexture);
-    BeginMode2D(state.camera);
-    ClearBackground(BLACK);
-
-    char buffer[32];
-    snprintf(buffer, sizeof(buffer), "things: %d", state.activeCount);
-    DrawText(buffer, 20, 20, 8, hex2Color(GREEN_HEX));
-
-    for (u16 i = 0; i < KIND_AMOUNT; ++i) {
-        Kind k = DRAW_ORDER[i];
-        u16 head = state.kindHeads[k];
-        if (head == NIL) continue;
-
-        u16 current = head;
-        do {
-            Thing *thing = &state.things[current];
-
-            switch (k) {
-                case PARTICLEKIND:
-                    particleDraw(thing);
-                    break;
-                case BULLETKIND:
-                    drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
-                    break;
-                case ALIENKIND:
-                    drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_GREEN]);
-                    break;
-                default:
-                    drawThing(&spritesheet, thing);
-                    break;
-            }
-            current = thing->nextSibId;
-        } while (current != head);
+        platform_present_buffer(state.backbuffer, GAME_WIDTH, GAME_HEIGHT);
     }
 
-    //drawDebugMasks(&state);
-    EndMode2D();
-    EndTextureMode();
+    return 0;
+}
 
-    BeginDrawing();
-    ClearBackground(BLACK);
-
-    SetTextureFilter(renderTexture.texture, TEXTURE_FILTER_POINT);
-    DrawTexturePro(renderTexture.texture,
-                   (Rectangle){0, 0, GAME_WIDTH, -GAME_HEIGHT},
-                   (Rectangle){0, 0, WINDOW_WIDTH, WINDOW_HEIGHT},
-                   (Vector2){0, 0}, 0.0, WHITE);
-
-    EndDrawing();
-  }
-
-  UnloadRenderTexture(renderTexture);
-  UnloadTexture(spritesheet);
-  CloseWindow();
-  return 0;
+void clearBuffer(u32* backbuffer, u32 color) {
+	for (int i = 0; i < GAME_WIDTH * GAME_HEIGHT; ++i) {
+		backbuffer[i] = color;
+	}
 }

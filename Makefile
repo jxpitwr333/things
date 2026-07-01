@@ -1,27 +1,22 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic -Werror -std=c99 -O2
+CFLAGS = -Wall -Wextra -pedantic -Werror -std=c99 #-O2
 TARGET_NAME = game
 
-RAYLIB_PATH ?= /usr/local
-
 ifeq ($(OS),Windows_NT)
-    RAYLIB_PATH = C:/raylib/raylib/src
-    
-    INCLUDES = -Isrc -I$(RAYLIB_PATH)
-    
-    LIBS = -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm
+
+    LIBS = -luser32 -lgdi32 -lm
     
     RM = del /q /f
     MKDIR = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
     TARGET_EXT = .exe
     RUN_CMD = $(TARGET)
 else
-    INCLUDES = -Isrc -I$(RAYLIB_PATH)/include
-    LIBS = -L$(RAYLIB_PATH)/lib -lraylib -lm -lpthread -ldl -lrt -lX11
-    RM = rm -rf
-    MKDIR = mkdir -p $(BUILD_DIR)
-    TARGET_EXT =
-    RUN_CMD = LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(TARGET)
+    # INCLUDES = -Isrc -I$(RAYLIB_PATH)/include
+    # LIBS = -L$(RAYLIB_PATH)/lib -lraylib -lm -lpthread -ldl -lrt -lX11
+    # RM = rm -rf
+    # MKDIR = mkdir -p $(BUILD_DIR)
+    # TARGET_EXT =
+    # RUN_CMD = LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(TARGET)
 endif
 
 SRC_DIR = src
@@ -32,7 +27,7 @@ SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # Uncomment to enable profiling
-# PROFILE = 1
+PROFILE = 1
 
 ifdef PROFILE
     CFLAGS += -g -fno-omit-frame-pointer

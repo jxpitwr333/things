@@ -17,17 +17,17 @@ const Formation FORMATIONS[] = {
         .offsets = {{0, 0}, {1, 0}, {2, 0}, {3, 0}}},
 };
 
-const i32 ALIEN_COLORS[] = {
+const u32 ALIEN_COLORS[] = {
     [ALIEN_GREEN] = GREEN_HEX,
     [ALIEN_ORANGE] = ORANGE_HEX,
     [ALIEN_RED] = RED_HEX
 };
 
-const i32 PLACEHOLDER_PALETTE[] = {
+const u32 PLACEHOLDER_PALETTE[] = {
     WHITE_HEX
 };
 
-const i32 EXHAUST_PALETTE[MAX_COLORS] = {
+const u32 EXHAUST_PALETTE[MAX_COLORS] = {
     GREY_HEX,
     ORANGE_HEX,
     YELLOW_HEX,
@@ -77,22 +77,20 @@ void particleUpdate(State *state, Thing *t) {
 }
 
 void particleDraw(Thing *t) {
-    Particle template = PARTICLES[t->parentId];
+    //Particle template = PARTICLES[t->parentId];
 
     switch (t->parentId) {
         case PARTICLE_EXHAUST: {
-            const i32 *palette = template.colorPalette;
-            float percentage = (float)t->alarms[1] / (float)template.lifetime;
-            int idx = clamp((int)floorf(percentage * template.colorCount), 0, template.colorCount - 1);
+            // const u32* palette = template.colorPalette;
+            // float percentage = (float)t->alarms[1] / (float)template.lifetime;
+            // int idx = clamp((int)floorf(percentage * template.colorCount), 0, template.colorCount - 1);
 
-            DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY),
-                    TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(palette[idx]));
+            //DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY), TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(palette[idx]));
             break;
         }
 
         case PARTICLE_EXPLOSION:
-            DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY),
-                    TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(ALIEN_COLORS[t->firstChildId]));
+            //DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY), TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(ALIEN_COLORS[t->firstChildId]));
             break;
     }
 }
@@ -139,11 +137,12 @@ void bulletUpdate(State *state, Thing *t) {
 void shipUpdate(State *state, u16 id) {
     Thing *ship = get(state->things, id);
 
-    int moveX = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
-    int moveY = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
+    int moveX = 0; //IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT)
+    int moveY = 0; //IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP)
 
-    if (IsKeyDown(KEY_SPACE) && ship->alarms[1] == 0) {
-        addScreenshake(state, 4);
+	// IsKeyDown(KEY_SPACE)
+    if (FALSE && ship->alarms[1] == 0) {
+        // addScreenshake(state, 4);
         ship->alarms[1] = 7;
 
         add(state, (Thing){
@@ -216,7 +215,7 @@ void spawnerUpdate(State *state) {
 
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId) {
     createExplosion(state, get(state->things, alienId));
-    addScreenshake(state, 4);
+    // addScreenshake(state, 4);
     state->sleepTime = 2;
     rem(state, bulletId);
     rem(state, alienId);

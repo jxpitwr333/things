@@ -5,8 +5,8 @@
 #include <string.h>
 
 const Animation ANIMATIONS[] = {
-    [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 16, .loops = true},
-    [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}};
+    [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 16, .loops = TRUE},
+    [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = FALSE}};
 
 const i8 SINTABLE[256] = {
        0,    3,    6,    9,   13,   16,   19,   22,   25,   28,   31,   34,   37,   40,   43,   46,
@@ -53,7 +53,11 @@ const Kind DRAW_ORDER[] = {
     SHIPKIND
 };
 
+const size_t DRAW_ORDER_COUNT = sizeof(DRAW_ORDER) / sizeof(DRAW_ORDER[0]);
+
 void init(State *state) {
+  state->sheet = loadSprite("assets/sheet.png");
+
   state->activeCount = 0;
   memset(state->activeIds, NIL, MAX_THINGS * sizeof(u16));
 
@@ -74,12 +78,12 @@ void init(State *state) {
   state->spawnerCounter = 0;
   state->sleepTime = 0;
   state->screenshake = 0.0f;
-  state->camera = (Camera2D){
+  /*state->camera = (Camera2D){
       .offset = GAME_CENTER,
       .rotation = 0.0f,
       .target = GAME_CENTER,
       .zoom = 1.0f
-  };
+  };*/
 }
 
 u16 add(State *state, Thing thing) {
@@ -135,7 +139,103 @@ void rem(State *state, u16 id) {
   state->nextEmptySlot = id;
 }
 
-static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY, i8 scaleX, i8 scaleY, u8 rotation) {
+Sprite loadSprite(const char* filename) {
+	Sprite sprite = {0};
+
+	int width, height, channels;
+    uint8_t *raw_data = stbi_load(filename, &width, &height, &channels, 4);
+    
+    if (!raw_data) {
+        printf("Failed to load image: %s\n", filename);
+        return sprite;
+    }
+
+    sprite.width = width;
+    sprite.height = height;
+    
+    sprite.pixels = (uint32_t *)malloc(width * height * sizeof(uint32_t));
+
+    for (int i = 0; i < width * height; ++i) {
+        uint8_t r = raw_data[i * 4 + 0];
+        uint8_t g = raw_data[i * 4 + 1];
+        uint8_t b = raw_data[i * 4 + 2];
+        uint8_t a = raw_data[i * 4 + 3];
+
+        sprite.pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    stbi_image_free(raw_data);
+
+    return sprite;
+}
+
+void drawSprite(State* state, i16 spriteId, i16 subX, i16 subY, i8 scaleX, i8 scaleY, u8 rotation) {
+    float renderX = floorf(TO_FLOAT_16(subX));
+    float renderY = floorf(TO_FLOAT_16(subY));
+    
+    float absScaleX = fabsf(TO_FLOAT_8(scaleX));
+    float absScaleY = fabsf(TO_FLOAT_8(scaleY));
+
+    u16 col = spriteId % SHEET_COLUMNS;
+    u16 row = spriteId / SHEET_COLUMNS;
+    int src_start_x = col * TILE_SIZE;
+    int src_start_y = row * TILE_SIZE;
+
+    float destWidth = (float)TILE_SIZE * absScaleX;
+    float destHeight = (float)TILE_SIZE * absScaleY;
+    float dest_cx = destWidth * 0.5f;
+    float dest_cy = destHeight * 0.5f;
+
+    float radius = (destWidth > destHeight ? destWidth : destHeight) * INV_SQRT_2;
+    int min_x = (int)(renderX - radius); int max_x = (int)(renderX + radius);
+    int min_y = (int)(renderY - radius); int max_y = (int)(renderY + radius);
+
+    float rad = BRAD2RAD(rotation);
+    float cos_a = cosf(rad);
+    float sin_a = sinf(rad);
+
+    for (int y = min_y; y <= max_y; ++y) {
+        if (y < 0 || y >= GAME_HEIGHT) continue;
+
+        for (int x = min_x; x <= max_x; ++x) {
+            if (x < 0 || x >= GAME_WIDTH) continue;
+
+            float dx = (float)x - renderX;
+            float dy = (float)y - renderY;
+
+            float local_x = (dx * cos_a + dy * sin_a);
+            float local_y = (-dx * sin_a + dy * cos_a);
+
+            local_x += dest_cx;
+            local_y += dest_cy;
+
+            if (local_x < 0.0f || local_x >= destWidth || local_y < 0.0f || local_y >= destHeight) {
+                continue;
+            }
+
+            float tex_u = local_x / absScaleX;
+            float tex_v = local_y / absScaleY;
+
+            if (scaleX < 0) tex_u = (float)TILE_SIZE - tex_u;
+            if (scaleY < 0) tex_v = (float)TILE_SIZE - tex_v;
+
+            int sheet_x = src_start_x + (int)tex_u;
+            int sheet_y = src_start_y + (int)tex_v;
+
+            if (sheet_x >= 0 && sheet_x < state->sheet.width && sheet_y >= 0 && sheet_y < state->sheet.height) {
+                uint32_t color = state->sheet.pixels[sheet_y * state->sheet.width + sheet_x];
+
+                // alpha test bypass
+                if ((color & 0xFF000000) != 0) {
+                    state->backbuffer[y * GAME_WIDTH + x] = color;
+                }
+            }
+        }
+    }
+}
+
+// DEPRECATED
+/*static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY, i8 scaleX, i8 scaleY, u8 rotation) {
   u16 col = spriteId % SHEET_COLUMNS;
   u16 row = spriteId / SHEET_COLUMNS;
 
@@ -160,9 +260,9 @@ static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY,
       (Rectangle){.x = renderX, .y = renderY, .width = destWidth, .height = destHeight},
       (Vector2){destWidth * 0.5f, destHeight * 0.5f},
       (float)BRAD2DEG(rotation), WHITE);
-}
+}*/
 
-void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
+void drawAnim(State *state, Thing *thing, const Animation *anim) {
   i16 currentTick = thing->alarms[0];
 
   int totalAnimationTicks = anim->ticksPerFrame * MAX_FRAMES;
@@ -180,11 +280,11 @@ void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
 
   i8 actualSpriteId = anim->frames[frameIndex];
 
-  drawSprite(spritesheet, actualSpriteId, thing->subX, thing->subY, thing->scaleX, thing->scaleY, thing->rotation);
+  drawSprite(state, actualSpriteId, thing->subX, thing->subY, thing->scaleX, thing->scaleY, thing->rotation);
 }
 
-void drawThing(Texture2D* spritesheet, Thing* thing) {
-    drawSprite(spritesheet, thing->spriteId, thing->subX, thing->subY, thing->scaleX, thing->scaleY, thing->rotation);
+void drawThing(State* state, Thing* thing) {
+    drawSprite(state, thing->spriteId, thing->subX, thing->subY, thing->scaleX, thing->scaleY, thing->rotation);
 }
 
 void kindLink(State *state, u16 id) {
@@ -230,7 +330,7 @@ void kindUnlink(State *state, u16 id) {
   }
 }
 
-bool checkAABB(Thing *t1, Thing *t2) {
+_Bool checkAABB(Thing *t1, Thing *t2) {
     i32 s1x = t1->scaleX < 0 ? -t1->scaleX : t1->scaleX;
     i32 s1y = t1->scaleY < 0 ? -t1->scaleY : t1->scaleY;
     i32 s2x = t2->scaleX < 0 ? -t2->scaleX : t2->scaleX;
@@ -249,7 +349,8 @@ bool checkAABB(Thing *t1, Thing *t2) {
     return (dx < (hx1 + hx2)) && (dy < (hy1 + hy2));
 }
 
-void drawThingMask(Thing *thing, Color color) {
+// DEPRECATED FOR NOW
+/*void drawThingMask(Thing *thing, Color color) {
     float px = TO_FLOAT_16(thing->subX);
     float py = TO_FLOAT_16(thing->subY);
     float sx = fabsf(TO_FLOAT_8(thing->scaleX));
@@ -291,7 +392,7 @@ void drawDebugMasks(State *state) {
       current = t->nextSibId;
     } while (current != head);
   }
-}
+}*/
 
 void checkCollisions(State *state, Kind k1, Kind k2,
                      CollisionCallback onCollide) {
@@ -303,7 +404,7 @@ void checkCollisions(State *state, Kind k1, Kind k2,
 
   u16 currentThing1 = head1;
   do {
-    bool thing1Removed = false;
+    _Bool thing1Removed = FALSE;
     u16 next1 = state->things[currentThing1].nextSibId;
     Thing *t1 = &state->things[currentThing1];
 
@@ -321,7 +422,7 @@ void checkCollisions(State *state, Kind k1, Kind k2,
 
           onCollide(state, currentThing1, currentThing2);
 
-          thing1Removed = true;
+          thing1Removed = TRUE;
           break;
         }
 
@@ -364,14 +465,15 @@ float nextFloat() {
     return (float)rand() / (float)RAND_MAX;
 }
 
-Color hex2Color(i32 hex) {
+/*Color hex2Color(i32 hex) {
   return (Color){.r = (u8)((hex >> 16) & 0xFF),
                  .g = (u8)((hex >> 8) & 0xFF),
                  .b = (u8)(hex & 0xFF),
                  .a = 255};
-}
+}*/
 
-void updateScreenshake(State* state) {
+// NEEDS MIGRATION
+/*void updateScreenshake(State* state) {
     if (state->screenshake >= 10.0) state->screenshake *= 0.8;
     if (state->screenshake > 0.0) {
         state->screenshake -= 1.0;
@@ -388,4 +490,4 @@ void updateScreenshake(State* state) {
 	}
 
 	state->camera.offset = (Vector2){(GAME_CENTER.x + shake_offset.x), (GAME_CENTER.y + shake_offset.y)};
-}
+}*/

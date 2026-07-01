@@ -36,7 +36,7 @@ extern const Formation FORMATIONS[];
 
 // base values for particle templates
 typedef struct {
-  const i32 *colorPalette;
+  const u32 *colorPalette;
   i16 speed; // 8.8
   i8 shrink;
   i8 scale;
@@ -56,9 +56,9 @@ typedef enum {
 } AlienType;
 
 extern const Particle PARTICLES[];
-extern const i32 ALIEN_COLORS[];
-extern const i32 PLACEHOLDER_PALETTE[];
-extern const i32 EXHAUST_PALETTE[MAX_COLORS];
+extern const u32 ALIEN_COLORS[];
+extern const u32 PLACEHOLDER_PALETTE[];
+extern const u32 EXHAUST_PALETTE[MAX_COLORS];
 
 void particleUpdate(State* state, Thing* t);
 void particleDraw(Thing* t);
