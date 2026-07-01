@@ -69,3 +69,8 @@ void platform_present_buffer(const void *buffer, int width, int height) {
 
 	Sleep(16);
 }
+
+void platform_destroy_window(void) {
+    // win32 window cleanup is handled automatically via post-quit messages
+    if (g_WindowHandle) DestroyWindow(g_WindowHandle);
+}

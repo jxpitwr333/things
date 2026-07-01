@@ -13,6 +13,7 @@ State state;
 void platform_create_window(int width, int height);
 void platform_process_events(void);
 void platform_present_buffer(const void *buffer, int width, int height);
+void platform_destroy_window(void);
 void clearBuffer(u32* backbuffer, u32 color);
 
 int main(void) {
@@ -102,6 +103,7 @@ int main(void) {
         platform_present_buffer(state.backbuffer, GAME_WIDTH, GAME_HEIGHT);
     }
 
+    platform_destroy_window();
     return 0;
 }
 
