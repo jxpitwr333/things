@@ -4,7 +4,7 @@
 #include "things.h"
 
 #define SHIP_SPD 2
-#define BULLET_SPD 5
+#define BULLET_SPD (TO_FIXED_16(5))
 #define SCREEN_TILES 16
 #define MAX_FORMATION_OFFSETS 8
 #define SECONDS(n) (n * ((i16)60))
@@ -37,24 +37,32 @@ extern const Formation FORMATIONS[];
 // base values for particle templates
 typedef struct {
   const i32 *colorPalette;
+  i16 speed; // 8.8
   i8 shrink;
   i8 scale;
   i8 lifetime;
-  i8 speed;
   u8 colorCount;
 } Particle;
-
-extern const Particle PARTICLES[];
 
 typedef enum {
   PARTICLE_EXHAUST,
   PARTICLE_EXPLOSION,
 } ParticleType;
 
+typedef enum {
+   ALIEN_GREEN,
+   ALIEN_ORANGE,
+   ALIEN_RED
+} AlienType;
+
+extern const Particle PARTICLES[];
+extern const i32 ALIEN_COLORS[];
+extern const i32 PLACEHOLDER_PALETTE[];
 extern const i32 EXHAUST_PALETTE[MAX_COLORS];
 
 void particleUpdate(State* state, Thing* t);
 void particleDraw(Thing* t);
+void createExplosion(State* state, Thing* t);
 void alienUpdate(Thing* t);
 void bulletUpdate(State* state, Thing* t);
 void shipUpdate(State *state, u16 id);

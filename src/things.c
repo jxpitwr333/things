@@ -231,16 +231,15 @@ void kindUnlink(State *state, u16 id) {
 }
 
 bool checkAABB(Thing *t1, Thing *t2) {
-    i16 s1x = t1->scaleX < 0 ? -t1->scaleX : t1->scaleX;
-    i16 s1y = t1->scaleY < 0 ? -t1->scaleY : t1->scaleY;
-    i16 s2x = t2->scaleX < 0 ? -t2->scaleX : t2->scaleX;
-    i16 s2y = t2->scaleY < 0 ? -t2->scaleY : t2->scaleY;
+    i32 s1x = t1->scaleX < 0 ? -t1->scaleX : t1->scaleX;
+    i32 s1y = t1->scaleY < 0 ? -t1->scaleY : t1->scaleY;
+    i32 s2x = t2->scaleX < 0 ? -t2->scaleX : t2->scaleX;
+    i32 s2y = t2->scaleY < 0 ? -t2->scaleY : t2->scaleY;
 
-    // 16 fixed point division leads to 8 fixed point so we instead multiply then bitshift by 3 so we get the half point.
-    i16 hx1 = (t1->mask.width  * s1x) << 3;
-    i16 hy1 = (t1->mask.height * s1y) << 3;
-    i16 hx2 = (t2->mask.width  * s2x) << 3;
-    i16 hy2 = (t2->mask.height * s2y) << 3;
+    i16 hx1 = (i16)((t1->mask.width  * s1x) << 3);
+    i16 hy1 = (i16)((t1->mask.height * s1y) << 3);
+    i16 hx2 = (i16)((t2->mask.width  * s2x) << 3);
+    i16 hy2 = (i16)((t2->mask.height * s2y) << 3);
 
     i16 dx = t1->subX - t2->subX;
     i16 dy = t1->subY - t2->subY;
