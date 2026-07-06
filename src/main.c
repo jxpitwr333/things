@@ -4,7 +4,6 @@
  */
 
 #include "game.h"
-#include "things.h"
 #include <stdio.h>
 
 State state;
@@ -51,7 +50,7 @@ int main(void) {
 			if (t->alarms[j] > 0)
 			t->alarms[j]--;
 		}
-		}
+	}
 
 	shipUpdate(&state, ship_id);
 	spawnerUpdate(&state);

@@ -1,6 +1,5 @@
 #include "platform_sleep.h"
 #include "game.h"
-#include "things.h"
 #include <math.h>
 
 const Formation FORMATIONS[] = {
