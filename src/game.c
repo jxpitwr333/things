@@ -19,7 +19,6 @@ const Formation FORMATIONS[] = {
 
 const i32 ALIEN_COLORS[] = {
     [ALIEN_GREEN] = GREEN_HEX,
-    [ALIEN_ORANGE] = ORANGE_HEX,
     [ALIEN_RED] = RED_HEX
 };
 
@@ -54,6 +53,14 @@ const Particle PARTICLES[] = {
         .lifetime = 16,
     },
 };
+
+const WaveTemplate WAVE_POOL[] = {
+    { .type = FORMATION_V,          .threatCost = 25, .alienColor = ALIEN_GREEN },
+    { .type = FORMATION_THREE_WALL, .threatCost = 15, .alienColor = ALIEN_GREEN },
+	{ .type = FORMATION_THREE_WALL, .threatCost = 35, .alienColor = ALIEN_RED },
+};
+
+const size_t WAVE_POOL_COUNT = sizeof(WAVE_POOL)/sizeof(WAVE_POOL[0]);
 
 void particleUpdate(State *state, Thing *t) {
     // alarm[1] is used for lifetime.
@@ -190,30 +197,73 @@ void shipUpdate(State *state, u16 id) {
                     (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
 }
 
-void spawnerUpdate(State *state) {
-    state->spawnerCounter++;
+void spawnerUpdate(State *state, Director* director) {
+    if (director->phaseTimer > 0) {
+        director->phaseTimer--;
+        
+        if (director->budget < director->maxBudget && (director->phaseTimer % 30 == 0)) {
+            director->budget += 5; 
+        }
+    } else {
+        director->phase = (director->phase + 1) % PHASE_COUNT;
 
-    if (state->spawnerCounter >= SECONDS(3)) {
-        state->spawnerCounter = 0;
+        switch (director->phase) {
+            case PHASE_BUILDUP:
+                director->maxBudget = 40;
+                director->phaseTimer = SECONDS(15);
+                break;
+            case PHASE_CLIMAX:
+                director->maxBudget = 90;
+                director->phaseTimer = SECONDS(15);
+                break;
+            case PHASE_RECOVERY:
+                director->maxBudget = 0;
+                director->phaseTimer = SECONDS(15);
+                director->budget = 0;
+                break;
+            default:
+                break;
+        }
+    }
 
-        Formation chosenFormation = FORMATIONS[randomRange(0, FORMATION_COUNT)];
-        i8 baseTile =
-            randomRange(chosenFormation.min_tile, chosenFormation.max_tile + 1);
+    if (director->timer > 0) {
+        director->timer--;
+        return;
+    }
+
+    if (director->budget <= 0) {
+        director->timer = SECONDS(1);
+        return;
+    }
+
+    i8 choice = randomRange(0, WAVE_POOL_COUNT);
+    WaveTemplate wave = WAVE_POOL[choice];
+
+    if (wave.threatCost <= director->budget) {
+        director->budget -= wave.threatCost;
+        
+        director->timer = SECONDS(randomRange(2, 4));
+
+        Formation chosenFormation = FORMATIONS[wave.type];
+        i8 baseTile = randomRange(chosenFormation.min_tile, chosenFormation.max_tile + 1);
 
         for (i8 i = 0; i < chosenFormation.count; ++i) {
             Vector2_i8 offset = chosenFormation.offsets[i];
             i16 tileX = baseTile + offset.x;
             i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
+            
             Thing* a = get(state->things, add(state, (Thing){
-                    .kind = ALIENKIND,
-                    .subX = TO_FIXED_16(tileX * TILE_SIZE + HALF_TILE_SIZE),
-                    .subY = TO_FIXED_16(posY),
-                    .mask = {.width = 6, .height = 6},
-                    .scaleX = TO_FIXED_8(1),
-                    .scaleY = TO_FIXED_8(1),
-                    }));
-			ALIEN_COLOR(a) = ALIEN_GREEN;
+                .kind = ALIENKIND,
+                .subX = TO_FIXED_16(tileX * TILE_SIZE + HALF_TILE_SIZE),
+                .subY = TO_FIXED_16(posY),
+                .mask = {.width = 6, .height = 6},
+                .scaleX = TO_FIXED_8(1),
+                .scaleY = TO_FIXED_8(1),
+            }));
+            ALIEN_COLOR(a) = wave.alienColor;
         }
+    } else {
+        director->timer = 15;
     }
 }
 

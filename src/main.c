@@ -4,9 +4,11 @@
  */
 
 #include "game.h"
+#include "things.h"
 #include <stdio.h>
 
-State state;
+State state = {0};
+Director director = {0};
 
 int main(void) {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Things");
@@ -33,16 +35,16 @@ int main(void) {
 
 		switch(t->kind) {
 			case PARTICLEKIND:
-			particleUpdate(&state, t);
-			break;
+				particleUpdate(&state, t);
+				break;
 			case ALIENKIND:
-			alienUpdate(t);
-			break;
+				alienUpdate(t);
+				break;
 			case BULLETKIND:
-			bulletUpdate(&state, t);
-			break;
+				bulletUpdate(&state, t);
+				break;
 			default:
-			break;
+				break;
 		}
 
 		ANIMATION_TICK(t)++;
@@ -53,7 +55,7 @@ int main(void) {
 	}
 
 	shipUpdate(&state, ship_id);
-	spawnerUpdate(&state);
+	spawnerUpdate(&state, &director);
 	checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
 	updateScreenshake(&state);
 
@@ -81,12 +83,24 @@ int main(void) {
                 case BULLETKIND:
                     drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
                     break;
-                case ALIENKIND:
-                    drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_GREEN]);
-                    break;
-                default:
-                    drawThing(&spritesheet, thing);
-                    break;
+                case ALIENKIND: {
+					AnimNames animation = 0; 
+						switch (ALIEN_COLOR(thing)) {
+							case ALIEN_GREEN:
+								animation = ANIM_GREEN;
+								break;
+							case ALIEN_RED:
+								animation = ANIM_RED;
+								break;
+							default:
+								break;
+						}
+						drawAnim(&spritesheet, thing, &ANIMATIONS[animation]);
+						break;
+					}
+				default:
+					drawThing(&spritesheet, thing);
+				break;
             }
             current = thing->nextSibId;
         } while (current != head);

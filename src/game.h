@@ -51,14 +51,36 @@ typedef enum {
 
 typedef enum {
    ALIEN_GREEN,
-   ALIEN_ORANGE,
    ALIEN_RED
 } AlienType;
+
+typedef struct {
+	FormationType type;
+	i16 threatCost;
+	i16 alienColor;
+} WaveTemplate;
+
+typedef enum {
+	PHASE_BUILDUP,
+    PHASE_CLIMAX,
+    PHASE_RECOVERY,
+    PHASE_COUNT
+} IntensityPhase;
+
+typedef struct {
+	IntensityPhase phase;
+	u16 timer;
+	u16 phaseTimer;
+	i16 budget;
+	i16 maxBudget;
+} Director;
 
 extern const Particle PARTICLES[];
 extern const i32 ALIEN_COLORS[];
 extern const i32 PLACEHOLDER_PALETTE[];
 extern const i32 EXHAUST_PALETTE[MAX_COLORS];
+extern const WaveTemplate WAVE_POOL[];
+extern const size_t WAVE_POOL_COUNT;
 
 void particleUpdate(State* state, Thing* t);
 void particleDraw(Thing* t);
@@ -66,7 +88,7 @@ void createExplosion(State* state, Thing* t);
 void alienUpdate(Thing* t);
 void bulletUpdate(State* state, Thing* t);
 void shipUpdate(State *state, u16 id);
-void spawnerUpdate(State *state);
+void spawnerUpdate(State *state, Director* director);
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId);
 
 #endif

@@ -63,6 +63,7 @@ typedef enum {
   SHIPKIND,
   ALIENKIND,
   BULLETKIND,
+  ENEMYBULLETKIND,
   PARTICLEKIND,
   KIND_AMOUNT,
 } Kind;
@@ -109,10 +110,13 @@ typedef struct {
 	u16 kindHeads[KIND_AMOUNT];
 	u16 activeCount;
 	u16 nextEmptySlot;
-	i16 spawnerCounter;
 } State;
 
-typedef enum { ANIM_GREEN, ANIM_BULLET } AnimNames;
+typedef enum {
+	ANIM_GREEN,
+	ANIM_BULLET,
+	ANIM_RED
+} AnimNames;
 
 typedef struct {
   bool loops;

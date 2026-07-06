@@ -6,7 +6,9 @@
 
 const Animation ANIMATIONS[] = {
     [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 16, .loops = true},
-    [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false}};
+    [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false},
+	[ANIM_RED] = {.frames = {6, 7}, .ticksPerFrame = 16, .loops = true},
+};
 
 const i8 SINTABLE[256] = {
        0,    3,    6,    9,   13,   16,   19,   22,   25,   28,   31,   34,   37,   40,   43,   46,
@@ -50,7 +52,8 @@ const Kind DRAW_ORDER[] = {
     PARTICLEKIND,
     ALIENKIND,
     BULLETKIND,
-    SHIPKIND
+    SHIPKIND,
+	ENEMYBULLETKIND,
 };
 
 void init(State *state) {
@@ -71,7 +74,6 @@ void init(State *state) {
 
   memset(&state->kindHeads, NIL, sizeof(state->kindHeads));
 
-  state->spawnerCounter = 0;
   state->screenshake = 0.0f;
   state->camera = (Camera2D){
       .offset = GAME_CENTER,
