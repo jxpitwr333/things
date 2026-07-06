@@ -27,11 +27,6 @@ int main(void) {
 
   while (!WindowShouldClose()) {
 
-	while (state.sleepTime > 0) {
-		state.sleepTime--;
-		goto renderStage;
-	}
-
 	for (u16 i = state.activeCount; i-- > 0;) {
 		u16 id = state.activeIds[i];
 		Thing *t = &state.things[id];
@@ -62,8 +57,6 @@ int main(void) {
 	spawnerUpdate(&state);
 	checkCollisions(&state, BULLETKIND, ALIENKIND, onBulletHitAlien);
 	updateScreenshake(&state);
-
-renderStage:
 
     BeginTextureMode(renderTexture);
     BeginMode2D(state.camera);

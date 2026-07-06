@@ -96,7 +96,6 @@ typedef struct {
 	Camera2D camera;
 	Texture *spritesheet;
 	float screenshake;
-	i32 sleepTime; // frames
 	Thing things[MAX_THINGS];
 	u16 activeIds[MAX_THINGS];
 	u16 kindHeads[KIND_AMOUNT];

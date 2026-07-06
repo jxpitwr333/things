@@ -72,7 +72,6 @@ void init(State *state) {
   memset(&state->kindHeads, NIL, sizeof(state->kindHeads));
 
   state->spawnerCounter = 0;
-  state->sleepTime = 0;
   state->screenshake = 0.0f;
   state->camera = (Camera2D){
       .offset = GAME_CENTER,

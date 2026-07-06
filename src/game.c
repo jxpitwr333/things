@@ -1,3 +1,4 @@
+#include "platform_sleep.h"
 #include "game.h"
 #include "things.h"
 #include <math.h>
@@ -217,7 +218,7 @@ void spawnerUpdate(State *state) {
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId) {
     createExplosion(state, get(state->things, alienId));
     addScreenshake(state, 4);
-    state->sleepTime = 2;
+    sys_sleep(2);
     rem(state, bulletId);
     rem(state, alienId);
 }
