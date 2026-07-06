@@ -92,6 +92,14 @@ typedef struct {
   i8 spriteId;
 } Thing;
 
+#define ANIMATION_TICK(t) ((t)->alarms[0])
+#define PARTICLE_LIFETIME(t) ((t)->alarms[1])
+#define WEAPON_COOLDOWN(t) ((t)->alarms[1])
+#define ALIEN_ROTATION_TIMER(t) ((t)->alarms[2])
+
+#define PARTICLE_TYPE(t) ((t)->parentId)
+#define ALIEN_COLOR(t) ((t)->firstChildId)
+
 typedef struct {
 	Camera2D camera;
 	Texture *spritesheet;

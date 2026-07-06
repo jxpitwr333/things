@@ -58,14 +58,14 @@ const Particle PARTICLES[] = {
 
 void particleUpdate(State *state, Thing *t) {
     // alarm[1] is used for lifetime.
-    if (t->alarms[1] == 0) {
+    if (PARTICLE_LIFETIME(t) == 0) {
         rem(state, t->id);
         return;
     }
 
     // for particles, the parentId field is repurposed for the particle type
     // indicator
-    Particle template = PARTICLES[t->parentId];
+    Particle template = PARTICLES[PARTICLE_TYPE(t)];
     if (template.shrink != 0) {
         t->scaleX -= template.shrink;
         t->scaleY -= template.shrink;
@@ -78,12 +78,12 @@ void particleUpdate(State *state, Thing *t) {
 }
 
 void particleDraw(Thing *t) {
-    Particle template = PARTICLES[t->parentId];
+    Particle template = PARTICLES[PARTICLE_TYPE(t)];
 
-    switch (t->parentId) {
+    switch (PARTICLE_TYPE(t)) {
         case PARTICLE_EXHAUST: {
             const i32 *palette = template.colorPalette;
-            float percentage = (float)t->alarms[1] / (float)template.lifetime;
+            float percentage = (float)PARTICLE_LIFETIME(t) / (float)template.lifetime;
             int idx = clamp((int)floorf(percentage * template.colorCount), 0, template.colorCount - 1);
 
             DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY),
@@ -93,7 +93,7 @@ void particleDraw(Thing *t) {
 
         case PARTICLE_EXPLOSION:
             DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY),
-                    TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(ALIEN_COLORS[t->firstChildId]));
+                    TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(ALIEN_COLORS[ALIEN_COLOR(t)]));
             break;
     }
 }
@@ -114,15 +114,15 @@ void createExplosion(State *state, Thing *t) {
                 .kind = PARTICLEKIND,
                 .alarms = {[1] = template.lifetime}
                 }));
-        p->parentId = PARTICLE_EXPLOSION;
-        p->firstChildId = t->firstChildId; // DETERMINES ALIEN COLOR
+        PARTICLE_TYPE(p) = PARTICLE_EXPLOSION;
+        ALIEN_COLOR(p) = ALIEN_COLOR(t);
     }
 }
 
 void alienUpdate(Thing *t) {
-    if (t->alarms[2] <= 0)
-        t->alarms[2] = 255;
-    u8 wave_idx = (u8)(t->alarms[2] * ALIEN_ROTATION_SPD);
+    if (ALIEN_ROTATION_TIMER(t) <= 0)
+        ALIEN_ROTATION_TIMER(t) = 255;
+    u8 wave_idx = (u8)(ALIEN_ROTATION_TIMER(t) * ALIEN_ROTATION_SPD);
     t->rotation = (SINTABLE[wave_idx] * ALIEN_ROTATION_AMPLITUDE) >> 7;
     t->subY += TO_FIXED_16(0.25);
 }
@@ -143,9 +143,9 @@ void shipUpdate(State *state, u16 id) {
     int moveX = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
     int moveY = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
 
-    if (IsKeyDown(KEY_SPACE) && ship->alarms[1] == 0) {
+    if (IsKeyDown(KEY_SPACE) && WEAPON_COOLDOWN(ship) == 0) {
         addScreenshake(state, 4);
-        ship->alarms[1] = 7;
+        WEAPON_COOLDOWN(ship) = 7;
 
         add(state, (Thing){
                 .kind = BULLETKIND,
@@ -169,13 +169,15 @@ void shipUpdate(State *state, u16 id) {
     }
 
     if (moveX != 0 || moveY != 0) {
-        add(state, (Thing){.kind = PARTICLEKIND,
-                .parentId = PARTICLE_EXHAUST,
-                .subX = ship->subX + TO_FIXED_16(randomRange(-2, 2)),
-                .subY = ship->subY + TO_FIXED_16(randomRange(-2, 2)),
-                .scaleX = PARTICLES[PARTICLE_EXHAUST].scale,
-                .scaleY = PARTICLES[PARTICLE_EXHAUST].scale,
-                .alarms = {[1] = PARTICLES[PARTICLE_EXHAUST].lifetime}});
+        Thing* p = get(state->things, add(state, (Thing){
+			.kind = PARTICLEKIND,
+			.subX = ship->subX + TO_FIXED_16(randomRange(-2, 2)),
+			.subY = ship->subY + TO_FIXED_16(randomRange(-2, 2)),
+			.scaleX = PARTICLES[PARTICLE_EXHAUST].scale,
+			.scaleY = PARTICLES[PARTICLE_EXHAUST].scale,
+			.alarms = {[1] = PARTICLES[PARTICLE_EXHAUST].lifetime}
+		}));
+		PARTICLE_TYPE(p) = PARTICLE_EXHAUST;
     }
 
     ship->subX += TO_FIXED_16(SHIP_SPD * moveX);
@@ -203,14 +205,15 @@ void spawnerUpdate(State *state) {
             Vector2_i8 offset = chosenFormation.offsets[i];
             i16 tileX = baseTile + offset.x;
             i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
-            get(state->things, add(state, (Thing){
+            Thing* a = get(state->things, add(state, (Thing){
                     .kind = ALIENKIND,
                     .subX = TO_FIXED_16(tileX * TILE_SIZE + HALF_TILE_SIZE),
                     .subY = TO_FIXED_16(posY),
                     .mask = {.width = 6, .height = 6},
                     .scaleX = TO_FIXED_8(1),
                     .scaleY = TO_FIXED_8(1),
-                    }))->firstChildId = ALIEN_GREEN; // firstChild is used to store the type of alien.
+                    }));
+			ALIEN_COLOR(a) = ALIEN_GREEN;
         }
     }
 }

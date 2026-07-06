@@ -162,14 +162,14 @@ static void drawSprite(Texture2D *spritesheet, i16 spriteId, i16 subX, i16 subY,
 }
 
 void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim) {
-  i16 currentTick = thing->alarms[0];
+  i16 currentTick = ANIMATION_TICK(thing);
 
   int totalAnimationTicks = anim->ticksPerFrame * MAX_FRAMES;
 
   if (currentTick >= totalAnimationTicks) {
     if (anim->loops) {
       currentTick = currentTick % totalAnimationTicks;
-      thing->alarms[0] = currentTick;
+      ANIMATION_TICK(thing) = currentTick;
     } else {
       currentTick = totalAnimationTicks - 1;
     }

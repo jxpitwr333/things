@@ -4,6 +4,7 @@
  */
 
 #include "game.h"
+#include "things.h"
 #include <stdio.h>
 
 State state;
@@ -45,8 +46,7 @@ int main(void) {
 			break;
 		}
 
-		// increment alarm[0] for animations, decrement every other alarm.
-		t->alarms[0]++;
+		ANIMATION_TICK(t)++;
 		for (i16 j = 1; j < MAX_ALARMS; ++j) {
 			if (t->alarms[j] > 0)
 			t->alarms[j]--;
