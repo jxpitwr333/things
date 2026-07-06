@@ -4,6 +4,9 @@ TARGET_NAME = game
 
 RAYLIB_PATH ?= /usr/local
 
+    RM = rm -rf
+    MKDIR = mkdir -p $(BUILD_DIR)
+
 ifeq ($(OS),Windows_NT)
     RAYLIB_PATH = C:/raylib/raylib/src
     
@@ -11,15 +14,12 @@ ifeq ($(OS),Windows_NT)
     
     LIBS = -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm
     
-    RM = del /q /f
-    MKDIR = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
     TARGET_EXT = .exe
     RUN_CMD = $(TARGET)
 else
     INCLUDES = -Isrc -I$(RAYLIB_PATH)/include
     LIBS = -L$(RAYLIB_PATH)/lib -lraylib -lm -lpthread -ldl -lrt -lX11
-    RM = rm -rf
-    MKDIR = mkdir -p $(BUILD_DIR)
+
     TARGET_EXT =
     RUN_CMD = LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(TARGET)
 endif
