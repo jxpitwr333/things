@@ -86,18 +86,7 @@ int main(void) {
                     drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
                     break;
                 case ALIENKIND: {
-					AnimNames animation = 0; 
-						switch (ALIEN_COLOR(thing)) {
-							case ALIEN_GREEN:
-								animation = ANIM_GREEN;
-								break;
-							case ALIEN_RED:
-								animation = ANIM_RED;
-								break;
-							default:
-								break;
-						}
-						drawAnim(&spritesheet, thing, &ANIMATIONS[animation]);
+						drawAnim(&spritesheet, thing, &ANIMATIONS[ANIMATION_ID(thing)]);
 						break;
 					}
 				default:

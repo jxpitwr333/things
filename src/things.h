@@ -27,8 +27,8 @@ typedef int32_t i32;
 #define TILE_SIZE 8
 #define HALF_TILE_SIZE 4
 
-#define SHEET_COLUMNS ((u16)11)
-#define SHEET_ROWS ((u16)2)
+#define SHEET_COLUMNS ((u16)16)
+#define SHEET_ROWS ((u16)16)
 
 #define SCALE_16 ((float)256.0f)
 #define SCALE_8 ((float)16.0f)
@@ -97,16 +97,20 @@ typedef struct {
 #define ANIMATION_TICK(t) ((t)->alarms[0])
 #define PARTICLE_LIFETIME(t) ((t)->alarms[1])
 #define WEAPON_COOLDOWN(t) ((t)->alarms[1])
-#define ALIEN_ROTATION_TIMER(t) ((t)->alarms[2])
+#define ALIEN_ROTATION_TIMER(t) ((t)->alarms[1])
+#define ALIEN_HITFLASH_TIMER(t) ((t)->alarms[2])
 
 #define PARTICLE_TYPE(t) ((t)->parentId)
 #define ALIEN_COLOR(t) ((t)->firstChildId)
 
+// for aliens
+#define ANIMATION_ID(t) ((t)->spriteId)
+
 typedef struct {
+	Thing things[MAX_THINGS];
 	Camera2D camera;
 	Texture *spritesheet;
 	float screenshake;
-	Thing things[MAX_THINGS];
 	u16 activeIds[MAX_THINGS];
 	u16 kindHeads[KIND_AMOUNT];
 	u16 activeCount;
@@ -116,7 +120,9 @@ typedef struct {
 typedef enum {
 	ANIM_GREEN,
 	ANIM_BULLET,
-	ANIM_RED
+	ANIM_RED,
+	ANIM_GREEN_FLASH,
+	ANIM_RED_FLASH
 } AnimNames;
 
 typedef struct {

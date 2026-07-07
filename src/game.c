@@ -64,10 +64,26 @@ const WaveTemplate WAVE_POOL[] = {
 
 const size_t WAVE_POOL_COUNT = sizeof(WAVE_POOL)/sizeof(WAVE_POOL[0]);
 
-static i8 get_alien_health(AlienType type) {
+static i8 getAlienHealth(AlienType type) {
 	switch (type) {
-		case ALIEN_GREEN:  return 2;
-		case ALIEN_RED:  return 3;
+		case ALIEN_GREEN: return 2;
+		case ALIEN_RED: return 3;
+		default: return 1;
+	}
+}
+
+static i8 getAlienAnim(AlienType type) {
+	switch (type) {
+		case ALIEN_GREEN: return ANIM_GREEN;
+		case ALIEN_RED: return ANIM_RED;
+		default: return 1;
+	}
+}
+
+static i8 getAlienHitAnim(AlienType type) {
+	switch (type) {
+		case ALIEN_GREEN: return ANIM_GREEN_FLASH;
+		case ALIEN_RED: return ANIM_RED_FLASH;
 		default: return 1;
 	}
 }
@@ -136,8 +152,8 @@ void createExplosion(State *state, Thing *t) {
 }
 
 void alienUpdate(Thing *t) {
-    if (ALIEN_ROTATION_TIMER(t) <= 0)
-        ALIEN_ROTATION_TIMER(t) = 255;
+    if (ALIEN_ROTATION_TIMER(t) <= 0) { ALIEN_ROTATION_TIMER(t) = 255; } 
+	if (ALIEN_HITFLASH_TIMER(t) <= 0) { ANIMATION_ID(t) = getAlienAnim(ALIEN_COLOR(t)); }
     u8 wave_idx = (u8)(ALIEN_ROTATION_TIMER(t) * ALIEN_ROTATION_SPD);
     t->rotation = (SINTABLE[wave_idx] * ALIEN_ROTATION_AMPLITUDE) >> 7;
     t->subY += TO_FIXED_16(0.25);
@@ -269,9 +285,10 @@ void spawnerUpdate(State *state, Director* director) {
                 .mask = {.width = TILE_SIZE, .height = TILE_SIZE},
                 .scaleX = TO_FIXED_8(1),
                 .scaleY = TO_FIXED_8(1),
-				.health = get_alien_health(wave.alienType),
+				.health = getAlienHealth(wave.alienType),
             }));
             ALIEN_COLOR(a) = wave.alienType;
+			ANIMATION_ID(a) = getAlienAnim(wave.alienType);
         }
     } else {
         director->timer = 15;
@@ -281,11 +298,13 @@ void spawnerUpdate(State *state, Director* director) {
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId) {
 	printf("entered onBulletHitAlien callback\n");
     rem(state, bulletId);
-	Thing* a = get(state->things, alienId);
-	a->health-=1;
-	if (a->health <= 0) {
+	Thing* alien = get(state->things, alienId);
+	alien->health-=1;
+	ANIMATION_ID(alien) = getAlienHitAnim(ALIEN_COLOR(alien));
+	ALIEN_HITFLASH_TIMER(alien) = 3;
+	if (alien->health <= 0) {
 		sys_sleep(2);
-		createExplosion(state, get(state->things, alienId));
+		createExplosion(state, alien);
 		addScreenshake(state, 4);
 		rem(state, alienId);
 	}

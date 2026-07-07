@@ -8,6 +8,8 @@ const Animation ANIMATIONS[] = {
     [ANIM_GREEN] = {.frames = {2, 3}, .ticksPerFrame = 16, .loops = true},
     [ANIM_BULLET] = {.frames = {18, 19}, .ticksPerFrame = 1, .loops = false},
 	[ANIM_RED] = {.frames = {6, 7}, .ticksPerFrame = 16, .loops = true},
+	[ANIM_GREEN_FLASH] = {.frames = {22, 23}, .ticksPerFrame = 16, .loops = true},
+	[ANIM_RED_FLASH] = {.frames = {26, 27}, .ticksPerFrame = 16, .loops = true},
 };
 
 const i8 SINTABLE[256] = {
