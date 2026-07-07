@@ -91,6 +91,7 @@ typedef struct {
   u8 rotation;
   u8 kind;
   i8 spriteId;
+  i8 health;
 } Thing;
 
 #define ANIMATION_TICK(t) ((t)->alarms[0])

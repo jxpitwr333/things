@@ -19,13 +19,15 @@ int main(void) {
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
-  u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
-                                    .subX = TO_FIXED_16(64),
-                                    .subY = TO_FIXED_16(64),
-                                    .scaleX = TO_FIXED_8(1),
-                                    .scaleY = TO_FIXED_8(1),
-                                    .spriteId = 0,
-                                    .mask = {.width = 8, .height = 8}});
+  	u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
+		.subX = TO_FIXED_16(64),
+		.subY = TO_FIXED_16(64),
+		.scaleX = TO_FIXED_8(1),
+		.scaleY = TO_FIXED_8(1),
+		.spriteId = 0,
+		.mask = {.width = TILE_SIZE - 2, .height = TILE_SIZE - 2},
+		.health = 3
+	});
 
   while (!WindowShouldClose()) {
 

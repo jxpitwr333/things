@@ -57,7 +57,7 @@ typedef enum {
 typedef struct {
 	FormationType type;
 	i16 threatCost;
-	i16 alienColor;
+	AlienType alienType;
 } WaveTemplate;
 
 typedef enum {

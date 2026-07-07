@@ -1,6 +1,8 @@
 #include "platform_sleep.h"
+#include "things.h"
 #include "game.h"
 #include <math.h>
+#include <stdio.h>
 
 const Formation FORMATIONS[] = {
     [FORMATION_V] = {.min_tile = 2,
@@ -55,12 +57,20 @@ const Particle PARTICLES[] = {
 };
 
 const WaveTemplate WAVE_POOL[] = {
-    { .type = FORMATION_V,          .threatCost = 25, .alienColor = ALIEN_GREEN },
-    { .type = FORMATION_THREE_WALL, .threatCost = 15, .alienColor = ALIEN_GREEN },
-	{ .type = FORMATION_THREE_WALL, .threatCost = 35, .alienColor = ALIEN_RED },
+    { .type = FORMATION_V,          .threatCost = 25, .alienType = ALIEN_GREEN },
+    { .type = FORMATION_THREE_WALL, .threatCost = 15, .alienType = ALIEN_GREEN },
+	{ .type = FORMATION_THREE_WALL, .threatCost = 35, .alienType = ALIEN_RED },
 };
 
 const size_t WAVE_POOL_COUNT = sizeof(WAVE_POOL)/sizeof(WAVE_POOL[0]);
+
+static i8 get_alien_health(AlienType type) {
+	switch (type) {
+		case ALIEN_GREEN:  return 2;
+		case ALIEN_RED:  return 3;
+		default: return 1;
+	}
+}
 
 void particleUpdate(State *state, Thing *t) {
     // alarm[1] is used for lifetime.
@@ -256,11 +266,12 @@ void spawnerUpdate(State *state, Director* director) {
                 .kind = ALIENKIND,
                 .subX = TO_FIXED_16(tileX * TILE_SIZE + HALF_TILE_SIZE),
                 .subY = TO_FIXED_16(posY),
-                .mask = {.width = 6, .height = 6},
+                .mask = {.width = TILE_SIZE, .height = TILE_SIZE},
                 .scaleX = TO_FIXED_8(1),
                 .scaleY = TO_FIXED_8(1),
+				.health = get_alien_health(wave.alienType),
             }));
-            ALIEN_COLOR(a) = wave.alienColor;
+            ALIEN_COLOR(a) = wave.alienType;
         }
     } else {
         director->timer = 15;
@@ -268,9 +279,14 @@ void spawnerUpdate(State *state, Director* director) {
 }
 
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId) {
-    createExplosion(state, get(state->things, alienId));
-    addScreenshake(state, 4);
-    sys_sleep(2);
+	printf("entered onBulletHitAlien callback\n");
     rem(state, bulletId);
-    rem(state, alienId);
+	Thing* a = get(state->things, alienId);
+	a->health-=1;
+	if (a->health <= 0) {
+		sys_sleep(2);
+		createExplosion(state, get(state->things, alienId));
+		addScreenshake(state, 4);
+		rem(state, alienId);
+	}
 }
