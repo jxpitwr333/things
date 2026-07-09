@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "things.h"
+#include <stddef.h>
 
 #define SHIP_SPD 2
 #define BULLET_SPD (TO_FIXED_16(5))
