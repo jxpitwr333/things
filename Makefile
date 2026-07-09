@@ -55,9 +55,13 @@ clean:
 run: $(TARGET)
 	$(RUN_CMD)
 
+rebuild:
+	$(MAKE) clean
+	$(MAKE) run
+
 profile: clean all
 	perf record -g $(RUN_CMD)
 	perf report
 	@echo "Profile data saved to perf.data"
 
-.PHONY: all clean run profile
+.PHONY: all clean run profile rebuild
