@@ -83,11 +83,11 @@ extern const i32 EXHAUST_PALETTE[MAX_COLORS];
 extern const WaveTemplate WAVE_POOL[];
 extern const size_t WAVE_POOL_COUNT;
 
-void particleUpdate(State* state, Thing* t);
-void particleDraw(Thing* t);
-void createExplosion(State* state, Thing* t);
-void alienUpdate(Thing* t);
-void bulletUpdate(State* state, Thing* t);
+void particleUpdate(State* state, u16 id);
+void particleDraw(State* state, u16 id);
+void createExplosion(State* state, u16 alienId);
+void alienUpdate(State* state, u16 id);
+void bulletUpdate(State* state, u16 id);
 void shipUpdate(State *state, u16 id);
 void spawnerUpdate(State *state, Director* director);
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId);

@@ -70,12 +70,8 @@ typedef enum {
 
 extern const Kind DRAW_ORDER[];
 
+// kept as a dto
 typedef struct {
-  i8 width, height;
-} Mask;
-
-typedef struct {
-  // alarm[0] is reserved for ticking the thing's animation.
   i16 alarms[MAX_ALARMS];
   u16 id;
   u16 denseId;
@@ -85,7 +81,8 @@ typedef struct {
   u16 firstChildId;
   u16 nextSibId;
   u16 prevSibId;
-  Mask mask;
+  i8 maskWidth;
+  i8 maskHeight;
   i8 scaleX;
   i8 scaleY;
   u8 rotation;
@@ -94,20 +91,40 @@ typedef struct {
   i8 health;
 } Thing;
 
-#define ANIMATION_TICK(t) ((t)->alarms[0])
-#define PARTICLE_LIFETIME(t) ((t)->alarms[1])
-#define WEAPON_COOLDOWN(t) ((t)->alarms[1])
-#define ALIEN_ROTATION_TIMER(t) ((t)->alarms[1])
-#define ALIEN_HITFLASH_TIMER(t) ((t)->alarms[2])
+#define ANIMATION_TICK(state, id) ((state)->things.alarms[(id)][0])
+#define PARTICLE_LIFETIME(state, id) ((state)->things.alarms[(id)][1])
+#define WEAPON_COOLDOWN(state, id) ((state)->things.alarms[(id)][1])
+#define ALIEN_ROTATION_TIMER(state, id) ((state)->things.alarms[(id)][1])
+#define ALIEN_HITFLASH_TIMER(state, id) ((state)->things.alarms[(id)][2])
 
-#define PARTICLE_TYPE(t) ((t)->parentId)
-#define ALIEN_COLOR(t) ((t)->firstChildId)
+#define PARTICLE_TYPE(state, id) ((state)->things.parentId[(id)])
+#define ALIEN_COLOR(state, id) ((state)->things.firstChildId[(id)])
 
 // for aliens
-#define ANIMATION_ID(t) ((t)->spriteId)
+#define ANIMATION_ID(state, id) ((state)->things.spriteId[(id)])
 
 typedef struct {
-	Thing things[MAX_THINGS];
+  i16 alarms[MAX_THINGS][MAX_ALARMS];
+  u16 id[MAX_THINGS];
+  u16 denseId[MAX_THINGS];
+  i16 subX[MAX_THINGS];
+  i16 subY[MAX_THINGS];
+  u16 parentId[MAX_THINGS];
+  u16 firstChildId[MAX_THINGS];
+  u16 nextSibId[MAX_THINGS];
+  u16 prevSibId[MAX_THINGS];
+  i8 maskWidth[MAX_THINGS];
+  i8 maskHeight[MAX_THINGS];
+  i8 scaleX[MAX_THINGS];
+  i8 scaleY[MAX_THINGS];
+  u8 rotation[MAX_THINGS];
+  u8 kind[MAX_THINGS];
+  i8 spriteId[MAX_THINGS];
+  i8 health[MAX_THINGS];
+} Things;
+
+typedef struct {
+	Things things;
 	Camera2D camera;
 	Texture *spritesheet;
 	float screenshake;
@@ -140,18 +157,14 @@ typedef void (*CollisionCallback)(State *state, u16 id1, u16 id2);
 
 void init(State *state);
 u16 add(State *state, Thing thing);
-Thing *get(Thing *things, u16 id);
 void rem(State *state, u16 id);
-void drawThing(Texture2D *spritesheet, Thing *thing);
-void drawAnim(Texture2D *spritesheet, Thing *thing, const Animation *anim);
+void drawThing(State *state, u16 id);
+void drawAnim(State *state, u16 id, const Animation *anim);
 void kindLink(State *state, u16 id);
 void kindUnlink(State *state, u16 id);
 
-bool checkAABB(Thing *t1, Thing *t2);
-void drawThingMask(Thing *thing, Color color);
-void drawDebugMasks(State *state);
-void checkCollisions(State *state, Kind k1, Kind k2,
-                     CollisionCallback onCollide);
+bool checkAABB(Things *things, u16 t1, u16 t2);
+void checkCollisions(State *state, Kind k1, Kind k2, CollisionCallback onCollide);
 
 int clamp(int value, int min, int max);
 float fclamp(float value, float min, float max);

@@ -88,138 +88,137 @@ static i8 getAlienHitAnim(AlienType type) {
 	}
 }
 
-void particleUpdate(State *state, Thing *t) {
+void particleUpdate(State *state, u16 id) {
     // alarm[1] is used for lifetime.
-    if (PARTICLE_LIFETIME(t) == 0) {
-        rem(state, t->id);
+    if (PARTICLE_LIFETIME(state, id) == 0) {
+        rem(state, id);
         return;
     }
 
     // for particles, the parentId field is repurposed for the particle type
     // indicator
-    Particle template = PARTICLES[PARTICLE_TYPE(t)];
+    Particle template = PARTICLES[PARTICLE_TYPE(state, id)];
     if (template.shrink != 0) {
-        t->scaleX -= template.shrink;
-        t->scaleY -= template.shrink;
+        state->things.scaleX[id] -= template.shrink;
+        state->things.scaleY[id] -= template.shrink;
     }
 
     if (template.speed != 0) {
-        t->subX += (COSTABLE[t->rotation] * template.speed) >> 7;
-        t->subY += (SINTABLE[t->rotation] * template.speed) >> 7;
+        state->things.subX[id] += (COSTABLE[state->things.rotation[id]] * template.speed) >> 7;
+        state->things.subY[id] += (SINTABLE[state->things.rotation[id]] * template.speed) >> 7;
     }
 }
 
-void particleDraw(Thing *t) {
-    Particle template = PARTICLES[PARTICLE_TYPE(t)];
+void particleDraw(State *state, u16 id) {
+    Particle template = PARTICLES[PARTICLE_TYPE(state, id)];
 
-    switch (PARTICLE_TYPE(t)) {
+    switch (PARTICLE_TYPE(state, id)) {
         case PARTICLE_EXHAUST: {
             const i32 *palette = template.colorPalette;
-            float percentage = (float)PARTICLE_LIFETIME(t) / (float)template.lifetime;
+            float percentage = (float)PARTICLE_LIFETIME(state, id) / (float)template.lifetime;
             int idx = clamp((int)floorf(percentage * template.colorCount), 0, template.colorCount - 1);
 
-            DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY),
-                    TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(palette[idx]));
+            DrawEllipse((int)TO_FLOAT_16(state->things.subX[id]), (int)TO_FLOAT_16(state->things.subY[id]),
+                    TO_FLOAT_8(state->things.scaleX[id]), TO_FLOAT_8(state->things.scaleY[id]), hex2Color(palette[idx]));
             break;
         }
 
         case PARTICLE_EXPLOSION:
-            DrawEllipse((int)TO_FLOAT_16(t->subX), (int)TO_FLOAT_16(t->subY),
-                    TO_FLOAT_8(t->scaleX), TO_FLOAT_8(t->scaleY), hex2Color(ALIEN_COLORS[ALIEN_COLOR(t)]));
+            DrawEllipse((int)TO_FLOAT_16(state->things.subX[id]), (int)TO_FLOAT_16(state->things.subY[id]),
+                    TO_FLOAT_8(state->things.scaleX[id]), TO_FLOAT_8(state->things.scaleY[id]), hex2Color(ALIEN_COLORS[ALIEN_COLOR(state, id)]));
             break;
     }
 }
 
-void createExplosion(State *state, Thing *t) {
+void createExplosion(State *state, u16 alienId) {
     const int EXPLOSION_PELLETS = 8;
     const float ANGLE_STEP = 360.0f / EXPLOSION_PELLETS;
 
     for (int i = 0; i < EXPLOSION_PELLETS; ++i) {
         Particle template = PARTICLES[PARTICLE_EXPLOSION];
         float angle = (float)i * ANGLE_STEP;
-        Thing* p = get(state->things, add(state, (Thing){
+        u16 p = add(state, (Thing){
                 .scaleX = template.scale,
                 .scaleY = template.scale,
                 .rotation = DEG2BRAD(angle),
-                .subX = t->subX,
-                .subY = t->subY,
+                .subX = state->things.subX[alienId],
+                .subY = state->things.subY[alienId],
                 .kind = PARTICLEKIND,
                 .alarms = {[1] = template.lifetime}
-                }));
-        PARTICLE_TYPE(p) = PARTICLE_EXPLOSION;
-        ALIEN_COLOR(p) = ALIEN_COLOR(t);
+                });
+        PARTICLE_TYPE(state, p) = PARTICLE_EXPLOSION;
+        ALIEN_COLOR(state, p) = ALIEN_COLOR(state, alienId);
     }
 }
 
-void alienUpdate(Thing *t) {
-    if (ALIEN_ROTATION_TIMER(t) <= 0) { ALIEN_ROTATION_TIMER(t) = 255; } 
-	if (ALIEN_HITFLASH_TIMER(t) <= 0) { ANIMATION_ID(t) = getAlienAnim(ALIEN_COLOR(t)); }
-    u8 wave_idx = (u8)(ALIEN_ROTATION_TIMER(t) * ALIEN_ROTATION_SPD);
-    t->rotation = (SINTABLE[wave_idx] * ALIEN_ROTATION_AMPLITUDE) >> 7;
-    t->subY += TO_FIXED_16(0.25);
+void alienUpdate(State *state, u16 id) {
+    if (ALIEN_ROTATION_TIMER(state, id) <= 0) { ALIEN_ROTATION_TIMER(state, id) = 255; } 
+    if (ALIEN_HITFLASH_TIMER(state, id) <= 0) { ANIMATION_ID(state, id) = getAlienAnim(ALIEN_COLOR(state, id)); }
+    u8 wave_idx = (u8)(ALIEN_ROTATION_TIMER(state, id) * ALIEN_ROTATION_SPD);
+    state->things.rotation[id] = (SINTABLE[wave_idx] * ALIEN_ROTATION_AMPLITUDE) >> 7;
+    state->things.subY[id] += TO_FIXED_16(0.25);
 }
 
-void bulletUpdate(State *state, Thing *t) {
-    t->subX += (COSTABLE[t->rotation] * BULLET_SPD) >> 7;
-    t->subY += (SINTABLE[t->rotation] * BULLET_SPD) >> 7;
+void bulletUpdate(State *state, u16 id) {
+    state->things.subX[id] += (COSTABLE[state->things.rotation[id]] * BULLET_SPD) >> 7;
+    state->things.subY[id] += (SINTABLE[state->things.rotation[id]] * BULLET_SPD) >> 7;
 
-    if (t->subY <= 0) {
-        rem(state, t->id);
+    if (state->things.subY[id] <= 0) {
+        rem(state, id);
         return;
     }
 }
 
 void shipUpdate(State *state, u16 id) {
-    Thing *ship = get(state->things, id);
-
     int moveX = IsKeyDown(KEY_RIGHT) - IsKeyDown(KEY_LEFT);
     int moveY = IsKeyDown(KEY_DOWN) - IsKeyDown(KEY_UP);
 
-    if (IsKeyDown(KEY_SPACE) && WEAPON_COOLDOWN(ship) == 0) {
+    if (IsKeyDown(KEY_SPACE) && WEAPON_COOLDOWN(state, id) == 0) {
         addScreenshake(state, 4);
-        WEAPON_COOLDOWN(ship) = 7;
+        WEAPON_COOLDOWN(state, id) = 7;
 
         add(state, (Thing){
                 .kind = BULLETKIND,
-                .subX = ship->subX,
-                .subY = ship->subY,
+                .subX = state->things.subX[id],
+                .subY = state->things.subY[id],
                 .rotation = DEG2BRAD(270),
                 .scaleX = TO_FIXED_8(1),
                 .scaleY = TO_FIXED_8(1),
-                .mask = {.width = 8, .height = 8},
+                .maskWidth = 8,
+                .maskHeight = 8,
                 });
     }
 
     if (moveX != 0) {
-        ship->spriteId = 1;
-        ship->scaleX = TO_FIXED_8(moveX);
-        ship->mask.width = 4;
+        state->things.spriteId[id] = 1;
+        state->things.scaleX[id] = TO_FIXED_8(moveX);
+        state->things.maskWidth[id] = 4;
     } else {
-        ship->spriteId = 0;
-        ship->scaleX = TO_FIXED_8(1);
-        ship->mask.width = 8;
+        state->things.spriteId[id] = 0;
+        state->things.scaleX[id] = TO_FIXED_8(1);
+        state->things.maskWidth[id] = 8;
     }
 
     if (moveX != 0 || moveY != 0) {
-        Thing* p = get(state->things, add(state, (Thing){
+        u16 p = add(state, (Thing){
 			.kind = PARTICLEKIND,
-			.subX = ship->subX + TO_FIXED_16(randomRange(-2, 2)),
-			.subY = ship->subY + TO_FIXED_16(randomRange(-2, 2)),
+			.subX = state->things.subX[id] + TO_FIXED_16(randomRange(-2, 2)),
+			.subY = state->things.subY[id] + TO_FIXED_16(randomRange(-2, 2)),
 			.scaleX = PARTICLES[PARTICLE_EXHAUST].scale,
 			.scaleY = PARTICLES[PARTICLE_EXHAUST].scale,
 			.alarms = {[1] = PARTICLES[PARTICLE_EXHAUST].lifetime}
-		}));
-		PARTICLE_TYPE(p) = PARTICLE_EXHAUST;
+		});
+		PARTICLE_TYPE(state, p) = PARTICLE_EXHAUST;
     }
 
-    ship->subX += TO_FIXED_16(SHIP_SPD * moveX);
-    ship->subY += TO_FIXED_16(SHIP_SPD * moveY);
+    state->things.subX[id] += TO_FIXED_16(SHIP_SPD * moveX);
+    state->things.subY[id] += TO_FIXED_16(SHIP_SPD * moveY);
 
-    ship->subX =
-        TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subX), (float)HALF_TILE_SIZE,
+    state->things.subX[id] =
+        TO_FIXED_16(fclamp(TO_FLOAT_16(state->things.subX[id]), (float)HALF_TILE_SIZE,
                     (float)(GAME_WIDTH - HALF_TILE_SIZE)));
-    ship->subY =
-        TO_FIXED_16(fclamp(TO_FLOAT_16(ship->subY), (float)HALF_TILE_SIZE,
+    state->things.subY[id] =
+        TO_FIXED_16(fclamp(TO_FLOAT_16(state->things.subY[id]), (float)HALF_TILE_SIZE,
                     (float)(GAME_HEIGHT - HALF_TILE_SIZE)));
 }
 
@@ -278,17 +277,18 @@ void spawnerUpdate(State *state, Director* director) {
             i16 tileX = baseTile + offset.x;
             i16 posY = -TILE_SIZE + (offset.y * TILE_SIZE);
             
-            Thing* a = get(state->things, add(state, (Thing){
+            u16 a = add(state, (Thing){
                 .kind = ALIENKIND,
                 .subX = TO_FIXED_16(tileX * TILE_SIZE + HALF_TILE_SIZE),
                 .subY = TO_FIXED_16(posY),
-                .mask = {.width = TILE_SIZE, .height = TILE_SIZE},
+                .maskWidth = TILE_SIZE,
+                .maskHeight = TILE_SIZE,
                 .scaleX = TO_FIXED_8(1),
                 .scaleY = TO_FIXED_8(1),
-				.health = getAlienHealth(wave.alienType),
-            }));
-            ALIEN_COLOR(a) = wave.alienType;
-			ANIMATION_ID(a) = getAlienAnim(wave.alienType);
+                .health = getAlienHealth(wave.alienType),
+            });
+            ALIEN_COLOR(state, a) = wave.alienType;
+			ANIMATION_ID(state, a) = getAlienAnim(wave.alienType);
         }
     } else {
         director->timer = 15;
@@ -298,13 +298,12 @@ void spawnerUpdate(State *state, Director* director) {
 void onBulletHitAlien(State *state, u16 bulletId, u16 alienId) {
 	printf("entered onBulletHitAlien callback\n");
     rem(state, bulletId);
-	Thing* alien = get(state->things, alienId);
-	alien->health-=1;
-	ANIMATION_ID(alien) = getAlienHitAnim(ALIEN_COLOR(alien));
-	ALIEN_HITFLASH_TIMER(alien) = 3;
-	if (alien->health <= 0) {
+	state->things.health[alienId] -= 1;
+	ANIMATION_ID(state, alienId) = getAlienHitAnim(ALIEN_COLOR(state, alienId));
+	ALIEN_HITFLASH_TIMER(state, alienId) = 3;
+	if (state->things.health[alienId] <= 0) {
 		sys_sleep(2);
-		createExplosion(state, alien);
+		createExplosion(state, alienId);
 		addScreenshake(state, 4);
 		rem(state, alienId);
 	}

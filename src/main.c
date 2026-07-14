@@ -17,6 +17,7 @@ int main(void) {
   init(&state);
 
   Texture2D spritesheet = LoadTexture("assets/sheet.png");
+  state.spritesheet = &spritesheet;
   RenderTexture2D renderTexture = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
   	u16 ship_id = add(&state, (Thing){.kind = SHIPKIND,
@@ -25,7 +26,8 @@ int main(void) {
 		.scaleX = TO_FIXED_8(1),
 		.scaleY = TO_FIXED_8(1),
 		.spriteId = 0,
-		.mask = {.width = TILE_SIZE - 2, .height = TILE_SIZE - 2},
+		.maskWidth = TILE_SIZE - 2,
+		.maskHeight = TILE_SIZE - 2,
 		.health = 3
 	});
 
@@ -33,26 +35,26 @@ int main(void) {
 
 	for (u16 i = state.activeCount; i-- > 0;) {
 		u16 id = state.activeIds[i];
-		Thing *t = &state.things[id];
+		Kind kind = state.things.kind[id];
 
-		switch(t->kind) {
+		switch(kind) {
 			case PARTICLEKIND:
-				particleUpdate(&state, t);
+				particleUpdate(&state, id);
 				break;
 			case ALIENKIND:
-				alienUpdate(t);
+				alienUpdate(&state, id);
 				break;
 			case BULLETKIND:
-				bulletUpdate(&state, t);
+				bulletUpdate(&state, id);
 				break;
 			default:
 				break;
 		}
 
-		ANIMATION_TICK(t)++;
+		ANIMATION_TICK(&state, id)++;
 		for (i16 j = 1; j < MAX_ALARMS; ++j) {
-			if (t->alarms[j] > 0)
-			t->alarms[j]--;
+			if (state.things.alarms[id][j] > 0)
+				state.things.alarms[id][j]--;
 		}
 	}
 
@@ -76,24 +78,22 @@ int main(void) {
 
         u16 current = head;
         do {
-            Thing *thing = &state.things[current];
-
             switch (k) {
                 case PARTICLEKIND:
-                    particleDraw(thing);
+                    particleDraw(&state, current);
                     break;
                 case BULLETKIND:
-                    drawAnim(&spritesheet, thing, &ANIMATIONS[ANIM_BULLET]);
+                    drawAnim(&state, current, &ANIMATIONS[ANIM_BULLET]);
                     break;
                 case ALIENKIND: {
-						drawAnim(&spritesheet, thing, &ANIMATIONS[ANIMATION_ID(thing)]);
+						drawAnim(&state, current, &ANIMATIONS[state.things.spriteId[current]]);
 						break;
 					}
 				default:
-					drawThing(&spritesheet, thing);
+					drawThing(&state, current);
 				break;
             }
-            current = thing->nextSibId;
+            current = state.things.nextSibId[current];
         } while (current != head);
     }
 
